@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Read It Out Settings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <form class="panel settings-panel is-ready" id="settings-form">
+      <header class="panel-header settings-header">
+        <div class="brand">
+          <div class="brand-icon" aria-hidden="true">
+            <img src="assets/logo.png" alt="" />
+          </div>
+          <div>
+            <h1 class="brand-title">Read It Out</h1>
+            <span class="brand-subtitle">SETTINGS</span>
+          </div>
+        </div>
+        <div class="status-pill" role="status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span class="status-text">Ready</span>
+        </div>
+      </header>
+
+      <nav class="settings-tabs" aria-label="Settings sections" role="tablist">
+        <button class="settings-tab is-active" type="button" id="general-tab" data-tab-target="general-panel" aria-controls="general-panel" aria-selected="true" role="tab">
+          General
+        </button>
+        <button class="settings-tab" type="button" id="page-controls-tab" data-tab-target="page-controls-panel" aria-controls="page-controls-panel" aria-selected="false" role="tab">
+          Page Controls
+        </button>
+      </nav>
+
+      <div class="settings-tab-panel is-active" id="general-panel" role="tabpanel" aria-labelledby="general-tab">
+        <section class="settings-section" aria-labelledby="engine-label">
+          <p class="section-label" id="engine-label">SPEECH ENGINE</p>
+          <div class="field-select">
+            <select id="speech-provider" aria-label="Speech engine"></select>
+          </div>
+        </section>
+
+        <section class="settings-section" id="elevenlabs-section" aria-labelledby="elevenlabs-api-label">
+          <label class="section-label" id="elevenlabs-api-label" for="elevenlabs-api-key">ELEVENLABS API KEY</label>
+          <input
+            class="settings-input"
+            id="elevenlabs-api-key"
+            type="password"
+            autocomplete="off"
+            placeholder="xi-api-key from elevenlabs.io"
+            spellcheck="false"
+          />
+          <p class="settings-hint">
+            <a
+              href="https://elevenlabs.io/app/settings/api-keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Get an API key</a
+            >
+          </p>
+        </section>
+
+        <section class="settings-section provider-settings" id="openai-section" aria-labelledby="openai-api-label">
+          <label class="section-label" id="openai-api-label" for="openai-api-key">OPENAI API KEY</label>
+          <input
+            class="settings-input"
+            id="openai-api-key"
+            type="password"
+            autocomplete="off"
+            placeholder="sk-..."
+            spellcheck="false"
+          />
+          <p class="settings-hint">
+            <a
+              href="https://platform.openai.com/api-keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Get an API key</a
+            >
+          </p>
+
+          <div class="settings-field-grid">
+            <section aria-labelledby="openai-model-label">
+              <p class="section-label" id="openai-model-label">MODEL</p>
+              <div class="field-select">
+                <select id="openai-model" aria-label="OpenAI model"></select>
+              </div>
+            </section>
+
+            <section aria-labelledby="openai-voice-label">
+              <p class="section-label" id="openai-voice-label">VOICE</p>
+              <div class="field-select">
+                <select id="openai-voice" aria-label="OpenAI voice"></select>
+              </div>
+            </section>
+          </div>
+
+          <section id="openai-style-section" aria-labelledby="openai-style-label">
+            <p class="section-label" id="openai-style-label">STYLE</p>
+            <div class="style-tags" id="openai-style-tags" role="group" aria-label="OpenAI style"></div>
+          </section>
+        </section>
+
+      <section class="settings-section provider-settings" id="sarvam-section" aria-labelledby="sarvam-api-label">
+          <label class="section-label" id="sarvam-api-label" for="sarvam-api-key">SARVAM API KEY</label>
+          <input
+            class="settings-input"
+            id="sarvam-api-key"
+            type="password"
+            autocomplete="off"
+            placeholder="api-subscription-key"
+            spellcheck="false"
+          />
+          <p class="settings-hint">
+            <a
+              href="https://dashboard.sarvam.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Get an API key</a
+            >
+          </p>
+
+          <div class="settings-field-grid">
+            <section aria-labelledby="sarvam-voice-label">
+              <p class="section-label" id="sarvam-voice-label">VOICE</p>
+              <div class="field-select">
+                <select id="sarvam-voice" aria-label="Sarvam voice"></select>
+              </div>
+            </section>
+
+            <section aria-labelledby="sarvam-language-label">
+              <p class="section-label" id="sarvam-language-label">LANGUAGE</p>
+              <div class="field-select">
+                <select id="sarvam-language" aria-label="Sarvam language"></select>
+              </div>
+            </section>
+          </div>
+
+          <section class="sarvam-expressiveness-section" aria-labelledby="sarvam-expressiveness-label">
+            <p
+              class="section-label"
+              id="sarvam-expressiveness-label"
+              title="Controls voice variation. Lower = consistent, Higher = expressive."
+            >
+              EXPRESSIVENESS
+            </p>
+            <div
+              class="speed-segmented compact-segmented"
+              id="sarvam-expressiveness"
+              role="group"
+              aria-label="Expressiveness"
+            ></div>
+        </section>
+      </section>
+
+      <section class="settings-section provider-settings" id="smallest-ai-section" aria-labelledby="smallest-ai-api-label">
+        <label class="section-label" id="smallest-ai-api-label" for="smallest-ai-api-key">SMALLEST AI API KEY</label>
+        <input
+          class="settings-input"
+          id="smallest-ai-api-key"
+          type="password"
+          autocomplete="off"
+          placeholder="Bearer token"
+          spellcheck="false"
+        />
+        <p class="settings-hint">
+          <a
+            href="https://app.smallest.ai/dashboard/api-keys"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Get an API key</a
+          >
+        </p>
+
+        <section class="provider-subsection" aria-labelledby="smallest-ai-voice-label">
+          <p class="section-label" id="smallest-ai-voice-label">VOICE</p>
+          <div class="field-select">
+            <select id="smallest-ai-voice" aria-label="Smallest AI voice"></select>
+          </div>
+        </section>
+      </section>
+
+      <div class="field-row language-row">
+          <section aria-labelledby="language-label">
+            <p class="section-label" id="language-label">LANGUAGE</p>
+            <div class="field-select lang-select-wrap">
+              <select id="language" aria-label="Language"></select>
+            </div>
+          </section>
+        </div>
+
+        <section class="speed-section" aria-labelledby="speed-label">
+          <p class="section-label" id="speed-label">SPEED</p>
+          <div class="speed-segmented" id="speed-buttons" role="group" aria-label="Playback speed"></div>
+        </section>
+
+      </div>
+
+      <div class="settings-tab-panel" id="page-controls-panel" role="tabpanel" aria-labelledby="page-controls-tab" hidden>
+        <section class="settings-section" aria-labelledby="page-controls-label">
+          <p class="section-label" id="page-controls-label">PAGE CONTROLS</p>
+          <label class="settings-toggle">
+            <span>
+              <strong>Selected text popup</strong>
+              <small>Show quick controls when text is selected.</small>
+            </span>
+            <input id="selection-popup-enabled" type="checkbox" />
+          </label>
+          <label class="settings-toggle">
+            <span>
+              <strong>Floating icon</strong>
+              <small>Show the always-on page reader dock.</small>
+            </span>
+            <input id="floating-dock-enabled" type="checkbox" />
+          </label>
+        </section>
+      </div>
+
+      <button type="submit" class="save-settings-btn" id="save-settings">
+        <span>Save</span>
+      </button>
+
+      <footer class="settings-footer">
+        <span class="footer-open-source">Proudly Free and Open Source</span>
+        <a
+          href="https://github.com/Spartan-71/Read-It-Out"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Star Read It Out on GitHub"
+        >Star on GitHub</a>
+      </footer>
+
+      <div class="popup-error-toast" id="popup-error-toast" role="alert" aria-live="assertive" hidden></div>
+    </form>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

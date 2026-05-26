@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "Read It Out",
+  "version": "1.0.0",
+  "description": "Read any webpage or article aloud with natural AI voices. Free built-in TTS or bring your own API key.",
+  "icons": {
+    "16": "assets/icon-16.png",
+    "32": "assets/icon-32.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  },
+  "permissions": ["contextMenus", "storage"],
+  "host_permissions": [
+    "https://api.elevenlabs.io/*",
+    "https://api.openai.com/*",
+    "https://api.sarvam.ai/*",
+    "https://api.smallest.ai/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Read It Out",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "32": "assets/icon-32.png",
+      "48": "assets/icon-48.png",
+      "128": "assets/icon-128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "content/selection-player.js",
+        "content/floating-dock.js",
+        "content/toolbar.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["panel.css", "assets/logo.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
