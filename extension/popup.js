@@ -4,10 +4,13 @@ import {
   DEFAULT_OPENAI_STYLE,
   DEFAULT_OPENAI_VOICE,
   DEFAULT_PLAYBACK_SPEED,
+  DEFAULT_KOKORO_VOICE,
+  KOKORO_LANGUAGES,
   DEFAULT_SARVAM_EXPRESSIVENESS,
   DEFAULT_SARVAM_LANGUAGE,
   DEFAULT_SARVAM_VOICE,
   DEFAULT_SMALLEST_AI_VOICE,
+  KOKORO_VOICES,
   DEFAULT_SPEECH_PROVIDER,
   LANGUAGES,
   OPENAI_MODELS,
@@ -37,6 +40,7 @@ const openAISection = document.getElementById("openai-section");
 const openAIStyleSection = document.getElementById("openai-style-section");
 const sarvamSection = document.getElementById("sarvam-section");
 const smallestAISection = document.getElementById("smallest-ai-section");
+const kokoroSection = document.getElementById("kokoro-section");
 const speedButtonsEl = document.getElementById("speed-buttons");
 const sarvamExpressivenessEl = document.getElementById("sarvam-expressiveness");
 const languageSelect = document.getElementById("language");
@@ -50,6 +54,7 @@ const sarvamVoiceSelect = document.getElementById("sarvam-voice");
 const sarvamLanguageSelect = document.getElementById("sarvam-language");
 const smallestAIApiKeyInput = document.getElementById("smallest-ai-api-key");
 const smallestAIVoiceSelect = document.getElementById("smallest-ai-voice");
+const kokoroVoiceSelect = document.getElementById("kokoro-voice");
 const saveButton = document.getElementById("save-settings");
 const errorToast = document.getElementById("popup-error-toast");
 
@@ -135,14 +140,17 @@ function updateProviderVisibility() {
   const openAI = speechProvider === "openAI";
   const sarvam = speechProvider === "sarvam";
   const smallestAI = speechProvider === "smallestAI";
+  const kokoro = speechProvider === "kokoro";
   form.classList.toggle("uses-elevenlabs", elevenLabs);
   form.classList.toggle("uses-openai", openAI);
   form.classList.toggle("uses-sarvam", sarvam);
   form.classList.toggle("uses-smallest-ai", smallestAI);
+  form.classList.toggle("uses-kokoro", kokoro);
   if (elevenLabsSection) elevenLabsSection.hidden = !elevenLabs;
   if (openAISection) openAISection.hidden = !openAI;
   if (sarvamSection) sarvamSection.hidden = !sarvam;
   if (smallestAISection) smallestAISection.hidden = !smallestAI;
+  if (kokoroSection) kokoroSection.hidden = !kokoro;
   if (openAIStyleSection) {
     openAIStyleSection.hidden = !openAI || openAIModelSelect.value === "tts-1";
   }
@@ -162,6 +170,9 @@ function webSpeechLanguageCodes() {
 
 function supportedLanguageOptions() {
   const languages = LANGUAGES.filter((lang) => lang.code !== "");
+  if (speechProvider === "kokoro") {
+    return KOKORO_LANGUAGES;
+  }
   if (speechProvider === "elevenLabs") return languages;
 
   const supportedCodes = webSpeechLanguageCodes();
@@ -206,6 +217,21 @@ function populateSmallestAIVoiceSelect(voices, preferredVoice = smallestAIVoiceS
   smallestAIVoiceSelect.value = [...smallestAIVoiceSelect.options].some((option) => option.value === preferredVoice)
     ? preferredVoice
     : DEFAULT_SMALLEST_AI_VOICE;
+}
+
+function populateKokoroVoiceSelect(preferredVoice = kokoroVoiceSelect.value) {
+  const language = languageSelect.value || savedLanguageCode || DEFAULT_LANGUAGE_CODE;
+  const voices = KOKORO_VOICES.filter((voice) => voice.language === language);
+  const options = voices.length ? voices : KOKORO_VOICES.filter((voice) => voice.language === "en-US");
+  populateSelect(
+    kokoroVoiceSelect,
+    options,
+    (voice) => voice.id,
+    (voice) => voice.label,
+  );
+  kokoroVoiceSelect.value = options.some((voice) => voice.id === preferredVoice)
+    ? preferredVoice
+    : options[0]?.id || DEFAULT_KOKORO_VOICE;
 }
 
 function setSmallestAIVoiceLoading() {
@@ -288,6 +314,7 @@ function initControls() {
     (language) => language.label,
   );
   populateSmallestAIVoiceSelect(SMALLEST_AI_FALLBACK_VOICES, DEFAULT_SMALLEST_AI_VOICE);
+  populateKokoroVoiceSelect(DEFAULT_KOKORO_VOICE);
 
   populateLanguageSelect();
   for (const speed of PLAYBACK_SPEEDS) {
@@ -377,6 +404,7 @@ async function loadSettings() {
 
   savedLanguageCode = stored.languageCode ?? DEFAULT_LANGUAGE_CODE;
   populateLanguageSelect(savedLanguageCode);
+  populateKokoroVoiceSelect(stored.kokoroVoice || DEFAULT_KOKORO_VOICE);
   updateProviderVisibility();
 
   playbackSpeed = PLAYBACK_SPEEDS.includes(stored.playbackSpeed)
@@ -411,6 +439,7 @@ async function saveSettings() {
       sarvamExpressiveness: sarvamExpressiveness || DEFAULT_SARVAM_EXPRESSIVENESS,
       smallestAiApiKey: smallestAIApiKeyInput.value.trim(),
       smallestAiVoice: smallestAIVoiceSelect.value || DEFAULT_SMALLEST_AI_VOICE,
+      kokoroVoice: kokoroVoiceSelect.value || DEFAULT_KOKORO_VOICE,
       languageCode: languageSelect.value || DEFAULT_LANGUAGE_CODE,
       playbackSpeed,
     });
@@ -450,6 +479,7 @@ smallestAIApiKeyInput.addEventListener("blur", () => {
   loadSmallestAIVoices();
 });
 smallestAIVoiceSelect.addEventListener("change", markDirty);
+kokoroVoiceSelect.addEventListener("change", markDirty);
 openAIModelSelect.addEventListener("change", () => {
   updateProviderVisibility();
   markDirty();
@@ -462,10 +492,16 @@ speechProviderSelect.addEventListener("change", () => {
     : DEFAULT_SPEECH_PROVIDER;
   updateProviderVisibility();
   populateLanguageSelect(languageSelect.value || savedLanguageCode);
+  if (speechProvider === "kokoro") {
+    populateKokoroVoiceSelect();
+  }
   markDirty();
 });
 languageSelect.addEventListener("change", () => {
   savedLanguageCode = languageSelect.value || DEFAULT_LANGUAGE_CODE;
+  if (speechProvider === "kokoro") {
+    populateKokoroVoiceSelect();
+  }
   markDirty();
 });
 

@@ -2,7 +2,7 @@
 
 A Chrome extension that reads web pages and selected text aloud using natural AI voices. 
 
-Works out of the box with the browser's free built-in speech engine, or connect OpenAI, ElevenLabs, Sarvam AI, or Smallest.ai for higher quality AI voices.
+Works out of the box with the browser's free built-in speech engine, local Kokoro ONNX speech, or connect OpenAI, ElevenLabs, Sarvam AI, or Smallest.ai for higher quality AI voices.
 
 ---
 
@@ -22,6 +22,7 @@ Works out of the box with the browser's free built-in speech engine, or connect 
 | Engine         | Quality   | Cost | Languages                     |
 | -------------- | --------- | ---- | ----------------------------- |
 | Browser Speech | Good      | Free | 20+                           |
+| Kokoro Local   | Great     | Free | English                       |
 | OpenAI TTS     | Great     | BYOK | Auto-detect                   |
 | ElevenLabs     | Excellent | BYOK | 30+                           |
 | Sarvam AI      | Great     | BYOK | 11 Indian languages           |
@@ -31,6 +32,8 @@ Works out of the box with the browser's free built-in speech engine, or connect 
 **BYOK** = Bring Your Own Key. 
 
 Keys are stored locally in your browser and sent only to the provider you select.
+
+Kokoro Local bundles the ONNX model and runtime assets with the extension, so the extension folder is larger but speech generation works without sending text to a remote TTS provider.
 
 ---
 
@@ -66,6 +69,9 @@ extension/
 ├── popup.js               Settings UI behavior
 ├── panel.css              Shared popup and content UI styles
 ├── config.js              Providers, voices, languages, defaults
+├── offscreen/             Local Kokoro synthesis document
+├── models/                Bundled Kokoro ONNX assets
+├── vendor/                Bundled browser runtime assets
 ├── content/               Selected-text mini player + 
 │                          floating dock controls
 └── speech-engines/        Provider-specific TTS adapters
@@ -85,4 +91,3 @@ Each provider lives in `speech-engines/` behind a common `SpeechEngine` interfac
 4. Open a pull request
 
 ---
-

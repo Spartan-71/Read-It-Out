@@ -1253,16 +1253,35 @@ html:has(.panel) body {
 .read-error-toast,
 .popup-error-toast {
   max-width: min(360px, calc(100vw - 32px));
-  padding: 12px 14px;
+  padding: 12px 14px 12px 38px;
   font-family: var(--font);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.35;
-  color: #ffeeee;
-  background: #260808;
-  border: 1px solid rgba(255, 117, 117, 0.34);
-  border-radius: 14px;
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.42);
+  color: #fff;
+  background: linear-gradient(180deg, #151d1d, #0d1313);
+  border: 1px solid rgba(156, 244, 229, 0.18);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.46), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.read-error-toast::before,
+.popup-error-toast::before {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  color: #04100e;
+  background: #ecc94b;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(236, 201, 75, 0.12);
+  content: "!";
 }
 
 .read-error-toast {
@@ -1290,7 +1309,14 @@ html:has(.panel) body {
 }
 
 .popup-error-toast.is-success {
-  color: #e9fffb;
-  background: #09231f;
+  color: #fff;
+  background: linear-gradient(180deg, #14231f, #0b1715);
   border-color: rgba(99, 223, 205, 0.34);
+}
+
+.popup-error-toast.is-success::before {
+  color: #04100e;
+  background: #9cf4e5;
+  box-shadow: 0 0 0 3px rgba(99, 223, 205, 0.12);
+  content: "";
 }

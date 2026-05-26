@@ -4,6 +4,7 @@ import {
   DEFAULT_OPENAI_OUTPUT_FORMAT,
   DEFAULT_OPENAI_STYLE,
   DEFAULT_OPENAI_VOICE,
+  DEFAULT_KOKORO_VOICE,
   DEFAULT_SARVAM_EXPRESSIVENESS,
   DEFAULT_SARVAM_LANGUAGE,
   DEFAULT_SARVAM_VOICE,
@@ -15,6 +16,8 @@ import { streamTextToSpeech as streamSarvamTextToSpeech } from "./speech-engines
 import { streamTextToSpeech as streamSmallestAITextToSpeech } from "./speech-engines/smallest-ai.js";
 
 const MENU_ID = "read-it-out";
+const KOKORO_OFFSCREEN_URL = "offscreen/kokoro.html";
+let creatingKokoroOffscreen;
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
@@ -44,6 +47,43 @@ async function blobToBase64(blob) {
   return btoa(binary);
 }
 
+async function ensureKokoroOffscreenDocument() {
+  if (!chrome.offscreen?.createDocument) {
+    throw new Error("Kokoro local speech requires Chrome offscreen document support.");
+  }
+
+  const offscreenUrl = chrome.runtime.getURL(KOKORO_OFFSCREEN_URL);
+  if (chrome.runtime.getContexts) {
+    const contexts = await chrome.runtime.getContexts({
+      contextTypes: ["OFFSCREEN_DOCUMENT"],
+      documentUrls: [offscreenUrl],
+    });
+    if (contexts.length > 0) return;
+  } else if (chrome.offscreen.hasDocument && await chrome.offscreen.hasDocument()) {
+    return;
+  }
+
+  if (!creatingKokoroOffscreen) {
+    creatingKokoroOffscreen = chrome.offscreen.createDocument({
+      url: KOKORO_OFFSCREEN_URL,
+      reasons: ["BLOBS"],
+      justification: "Generate local Kokoro speech audio with bundled ONNX Runtime assets.",
+    }).finally(() => {
+      creatingKokoroOffscreen = null;
+    });
+  }
+  await creatingKokoroOffscreen;
+}
+
+async function synthesizeKokoroSpeech(text, options) {
+  await ensureKokoroOffscreenDocument();
+  return chrome.runtime.sendMessage({
+    action: "synthesizeKokoro",
+    text,
+    ...options,
+  });
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === "openPopup") {
     chrome.action.openPopup().catch(() => {});
@@ -68,16 +108,28 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           "sarvamExpressiveness",
           "smallestAiApiKey",
           "smallestAiVoice",
+          "kokoroVoice",
           "languageCode",
           "playbackSpeed",
         ]);
 
-        const provider = ["openAI", "sarvam", "smallestAI"].includes(stored.speechProvider)
+        const provider = ["openAI", "sarvam", "smallestAI", "kokoro"].includes(stored.speechProvider)
           ? stored.speechProvider
           : "elevenLabs";
         let result;
 
-        if (provider === "openAI") {
+        if (provider === "kokoro") {
+          result = await synthesizeKokoroSpeech(message.text, {
+            voice: stored.kokoroVoice || DEFAULT_KOKORO_VOICE,
+            playbackSpeed: message.playbackSpeed ?? stored.playbackSpeed,
+          });
+          if (!result?.ok) {
+            sendResponse({ ok: false, error: result?.error || "Kokoro could not generate audio for this text. Try a shorter selection." });
+            return;
+          }
+          sendResponse(result);
+          return;
+        } else if (provider === "openAI") {
           const apiKey = stored.openaiApiKey;
           if (!apiKey) {
             sendResponse({ ok: false, error: "OpenAI API key missing or invalid." });

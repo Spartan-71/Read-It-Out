@@ -63,7 +63,7 @@
   }
 
   function currentAudioPlaybackRate(speed) {
-    return ["sarvam", "smallestAI"].includes(speechProvider) ? 1 : clientPlaybackRate(speed);
+    return ["sarvam", "smallestAI", "kokoro"].includes(speechProvider) ? 1 : clientPlaybackRate(speed);
   }
 
   const SETTINGS_KEYS = [
@@ -82,6 +82,7 @@
     "sarvamExpressiveness",
     "smallestAiApiKey",
     "smallestAiVoice",
+    "kokoroVoice",
     "languageCode",
     "playbackSpeed",
   ];
@@ -184,7 +185,7 @@
   }
 
   function normalizeSpeechProvider(provider) {
-    return ["elevenLabs", "openAI", "sarvam", "smallestAI"].includes(provider)
+    return ["elevenLabs", "openAI", "sarvam", "smallestAI", "kokoro"].includes(provider)
       ? provider
       : "webSpeech";
   }
@@ -343,6 +344,15 @@
     if (/extension context invalidated|context invalidated|receiving end does not exist/i.test(message)) {
       return "Read It Out was reloaded. Refresh this page once, then try again.";
     }
+    if (speechProvider === "kokoro") {
+      if (/model could not be loaded/i.test(message)) {
+        return message.length > 180 ? `${message.slice(0, 177)}...` : message;
+      }
+      if (/browser cannot play|no supported source|not playable audio|empty audio|empty audio stream|decode|incomplete/i.test(message)) {
+        return `Kokoro generated audio could not be played: ${message}`;
+      }
+      return `Kokoro error: ${message}`;
+    }
     if (/openai/i.test(message)) {
       if (/api key|401|unauthorized/i.test(message)) {
         return "OpenAI API key missing or invalid. Open settings and check your API key.";
@@ -391,6 +401,12 @@
       }
       return `Smallest AI error: ${message}`;
     }
+    if (/kokoro/i.test(message)) {
+      if (/model could not be loaded/i.test(message)) {
+        return message.length > 180 ? `${message.slice(0, 177)}...` : message;
+      }
+      return "Kokoro could not generate audio for this text. Try a shorter selection.";
+    }
     if (/api key/i.test(message)) {
       return "ElevenLabs API key missing or invalid. Open settings and check your API key.";
     }
@@ -422,6 +438,9 @@
         return "Smallest AI API key expired or unauthorized.";
       }
       return "Invalid or missing Smallest AI API key. Check your key in settings.";
+    }
+    if (speechProvider === "kokoro") {
+      return "Kokoro could not generate audio for this text. Try a shorter selection.";
     }
     if (/401|403|unauthorized|forbidden/i.test(message)) {
       return "ElevenLabs rejected the request. Check your API key and account access.";
@@ -1007,7 +1026,154 @@
     return new Blob([bytes], { type: mimeType || "audio/mpeg" });
   }
 
-  function createAudioFromResult(result) {
+  function base64ToBytes(base64, byteLength = 0) {
+    if (!base64) {
+      throw new Error("Speech provider returned empty audio");
+    }
+    const binary = atob(base64);
+    if (byteLength && binary.length !== byteLength) {
+      throw new Error("Speech provider audio response was incomplete");
+    }
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    if (bytes.length === 0) {
+      throw new Error("Speech provider returned empty audio");
+    }
+    return bytes;
+  }
+
+  class WebAudioPlayback extends EventTarget {
+    constructor(buffer, debug = "") {
+      super();
+      this.context = new AudioContext();
+      this.buffer = buffer;
+      this.debug = debug;
+      this.source = null;
+      this.startedAt = 0;
+      this.offset = 0;
+      this.paused = true;
+      this.ended = false;
+      this.error = null;
+      this._playbackRate = 1;
+      setTimeout(() => {
+        this.dispatchEvent(new Event("loadedmetadata"));
+        this.dispatchEvent(new Event("durationchange"));
+        this.dispatchEvent(new Event("timeupdate"));
+      }, 0);
+    }
+
+    get duration() {
+      return this.buffer.duration;
+    }
+
+    get currentTime() {
+      if (this.paused || !this.source) return Math.min(this.offset, this.duration);
+      const elapsed = (this.context.currentTime - this.startedAt) * this._playbackRate;
+      return Math.min(this.offset + elapsed, this.duration);
+    }
+
+    set currentTime(value) {
+      this.offset = Math.min(Math.max(Number(value) || 0, 0), this.duration);
+      if (!this.paused) {
+        this.pause();
+        this.play();
+      }
+    }
+
+    get playbackRate() {
+      return this._playbackRate;
+    }
+
+    set playbackRate(value) {
+      this._playbackRate = Math.min(4, Math.max(0.25, Number(value) || 1));
+      if (this.source) this.source.playbackRate.value = this._playbackRate;
+    }
+
+    async play() {
+      if (!this.paused) return;
+      if (this.ended) {
+        this.offset = 0;
+        this.ended = false;
+      }
+      await this.context.resume();
+      const source = this.context.createBufferSource();
+      source.buffer = this.buffer;
+      source.playbackRate.value = this._playbackRate;
+      source.connect(this.context.destination);
+      let stoppedByPause = false;
+      source.onended = () => {
+        if (stoppedByPause || this.source !== source) return;
+        this.offset = this.duration;
+        this.paused = true;
+        this.ended = true;
+        this.source = null;
+        this.dispatchEvent(new Event("timeupdate"));
+        this.dispatchEvent(new Event("ended"));
+      };
+      this.source = source;
+      this.startedAt = this.context.currentTime;
+      this.paused = false;
+      source.start(0, this.offset);
+      source._stopForPause = () => {
+        stoppedByPause = true;
+        source.stop();
+      };
+      this.dispatchEvent(new Event("play"));
+      this.dispatchEvent(new Event("timeupdate"));
+    }
+
+    pause() {
+      if (this.paused) return;
+      this.offset = this.currentTime;
+      const source = this.source;
+      this.source = null;
+      this.paused = true;
+      if (source?._stopForPause) source._stopForPause();
+      this.dispatchEvent(new Event("pause"));
+      this.dispatchEvent(new Event("timeupdate"));
+    }
+
+    removeAttribute() {}
+
+    load() {
+      if (this.source?._stopForPause) this.source._stopForPause();
+      this.source = null;
+      this.paused = true;
+      this.context.close().catch(() => {});
+    }
+  }
+
+  async function createKokoroAudioFromResult(result) {
+    const bytes = base64ToBytes(result.audio, result.byteLength);
+    const context = new AudioContext();
+    let buffer;
+    try {
+      buffer = await context.decodeAudioData(bytes.buffer.slice(0));
+    } catch (err) {
+      const parts = [];
+      if (result.byteLength) parts.push(`${result.byteLength} bytes`);
+      if (result.debug?.samples) parts.push(`${result.debug.samples} samples`);
+      if (result.debug?.header) parts.push(result.debug.header);
+      const suffix = parts.length ? ` (${parts.join(", ")})` : "";
+      throw new Error(`Kokoro WAV could not be decoded: ${err?.message || err}${suffix}`);
+    } finally {
+      context.close().catch(() => {});
+    }
+
+    const parts = [];
+    if (result.byteLength) parts.push(`${result.byteLength} bytes`);
+    if (result.debug?.samples) parts.push(`${result.debug.samples} samples`);
+    if (result.debug?.header) parts.push(result.debug.header);
+    return { audio: new WebAudioPlayback(buffer, parts.join(", ")), objectUrl: null };
+  }
+
+  async function createAudioFromResult(result) {
+    if (speechProvider === "kokoro") {
+      return createKokoroAudioFromResult(result);
+    }
+
     const mimeType = result.mimeType || "audio/mpeg";
     const probe = document.createElement("audio");
     if (mimeType && probe.canPlayType(mimeType) === "") {
@@ -1018,13 +1184,24 @@
             ? "Sarvam"
             : speechProvider === "smallestAI"
               ? "Smallest AI"
-              : "ElevenLabs";
+              : speechProvider === "kokoro"
+                ? "Kokoro"
+                : "ElevenLabs";
       throw new Error(`Browser cannot play ${provider} audio type ${mimeType}`);
     }
     const blob = base64ToAudioBlob(result.audio, mimeType, result.byteLength);
     const objectUrl = URL.createObjectURL(blob);
+    const audio = new Audio(objectUrl);
+    audio.dataset.speechProvider = speechProvider;
+    if (result.debug) {
+      const parts = [];
+      if (result.byteLength) parts.push(`${result.byteLength} bytes`);
+      if (result.debug.samples) parts.push(`${result.debug.samples} samples`);
+      if (result.debug.header) parts.push(result.debug.header);
+      audio.dataset.speechDebug = parts.join(", ");
+    }
     return {
-      audio: new Audio(objectUrl),
+      audio,
       objectUrl,
     };
   }
@@ -1043,8 +1220,9 @@
     }
 
     try {
-      return { result, audioResult: createAudioFromResult(result) };
+      return { result, audioResult: await createAudioFromResult(result) };
     } catch (err) {
+      if (speechProvider === "kokoro") throw err;
       const message = String(err?.message || err);
       const canRetryOpenAIMp3 =
         speechProvider === "openAI" &&
@@ -1058,12 +1236,22 @@
 
       const outputFormat = canRetryElevenLabsMp3 ? "mp3_22050_32" : "mp3";
       const fallbackResult = await synthesizeSpeech(text, playbackSpeed, { outputFormat });
-      return { result: fallbackResult, audioResult: createAudioFromResult(fallbackResult) };
+      return { result: fallbackResult, audioResult: await createAudioFromResult(fallbackResult) };
     }
   }
 
   function mediaErrorMessage(element) {
     const code = element?.error?.code;
+    const debug = element?.dataset?.speechDebug ? ` (${element.dataset.speechDebug})` : "";
+    if (speechProvider === "kokoro" || element?.dataset?.speechProvider === "kokoro") {
+      if (code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+        return `Kokoro generated audio could not be played: no supported source${debug}`;
+      }
+      if (code === MediaError.MEDIA_ERR_DECODE) {
+        return `Kokoro generated audio could not be decoded${debug}`;
+      }
+      return `Kokoro audio playback failed${debug}`;
+    }
     if (code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
       return "Generated audio could not be played by this browser. Try again with a shorter selection.";
     }

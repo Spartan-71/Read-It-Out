@@ -131,10 +131,79 @@ export const SARVAM_EXPRESSIVENESS = [
 
 export const SMALLEST_AI_FALLBACK_VOICES = [
   { id: "magnus", label: "Magnus - English (Male)" },
-  { id: "maithili", label: "Maithili - Hindi/English (Female)" },
+  { id: "maithili", label: "Maithili/English (Female)" },
   { id: "jeevan", label: "Jeevan - Tamil (Male)" },
-  { id: "carlos", label: "Carlos - Spanish (Male)" },
+  { id: "carlos", label: "Carlos (Male)" },
   { id: "rajeshwari", label: "Rajeshwari - Tamil (Female)" },
+];
+
+export const KOKORO_LANGUAGES = [
+  { code: "en-US", label: "American English", flag: "🇺🇸" },
+  { code: "en-GB", label: "British English", flag: "🇬🇧" },
+  { code: "ja", label: "Japanese", flag: "🇯🇵" },
+  { code: "zh-CN", label: "Mandarin Chinese", flag: "🇨🇳" },
+  { code: "es", label: "Spanish", flag: "🇪🇸" },
+  { code: "fr-FR", label: "French", flag: "🇫🇷" },
+  { code: "hi", label: "Hindi", flag: "🇮🇳" },
+  { code: "it", label: "Italian", flag: "🇮🇹" },
+  { code: "pt-BR", label: "Brazilian Portuguese", flag: "🇧🇷" },
+];
+
+export const KOKORO_VOICES = [
+  { id: "af_heart", label: "Heart (Female)", language: "en-US" },
+  { id: "af_alloy", label: "Alloy (Female)", language: "en-US" },
+  { id: "af_aoede", label: "Aoede (Female)", language: "en-US" },
+  { id: "af_bella", label: "Bella (Female)", language: "en-US" },
+  { id: "af_jessica", label: "Jessica (Female)", language: "en-US" },
+  { id: "af_kore", label: "Kore (Female)", language: "en-US" },
+  { id: "af_nicole", label: "Nicole (Female)", language: "en-US" },
+  { id: "af_nova", label: "Nova (Female)", language: "en-US" },
+  { id: "af_river", label: "River (Female)", language: "en-US" },
+  { id: "af_sarah", label: "Sarah (Female)", language: "en-US" },
+  { id: "af_sky", label: "Sky (Female)", language: "en-US" },
+  { id: "am_adam", label: "Adam (Male)", language: "en-US" },
+  { id: "am_echo", label: "Echo (Male)", language: "en-US" },
+  { id: "am_eric", label: "Eric (Male)", language: "en-US" },
+  { id: "am_fenrir", label: "Fenrir (Male)", language: "en-US" },
+  { id: "am_liam", label: "Liam (Male)", language: "en-US" },
+  { id: "am_michael", label: "Michael (Male)", language: "en-US" },
+  { id: "am_onyx", label: "Onyx (Male)", language: "en-US" },
+  { id: "am_puck", label: "Puck (Male)", language: "en-US" },
+  { id: "am_santa", label: "Santa (Male)", language: "en-US" },
+  { id: "bf_alice", label: "Alice (Female)", language: "en-GB" },
+  { id: "bf_emma", label: "Emma (Female)", language: "en-GB" },
+  { id: "bf_isabella", label: "Isabella (Female)", language: "en-GB" },
+  { id: "bf_lily", label: "Lily (Female)", language: "en-GB" },
+  { id: "bm_daniel", label: "Daniel (Male)", language: "en-GB" },
+  { id: "bm_fable", label: "Fable (Male)", language: "en-GB" },
+  { id: "bm_george", label: "George (Male)", language: "en-GB" },
+  { id: "bm_lewis", label: "Lewis (Male)", language: "en-GB" },
+  { id: "jf_alpha", label: "Alpha (Female)", language: "ja" },
+  { id: "jf_gongitsune", label: "Gongitsune (Female)", language: "ja" },
+  { id: "jf_nezumi", label: "Nezumi (Female)", language: "ja" },
+  { id: "jf_tebukuro", label: "Tebukuro (Female)", language: "ja" },
+  { id: "jm_kumo", label: "Kumo (Male)", language: "ja" },
+  { id: "zf_xiaobei", label: "Xiaobei (Female)", language: "zh-CN" },
+  { id: "zf_xiaoni", label: "Xiaoni (Female)", language: "zh-CN" },
+  { id: "zf_xiaoxiao", label: "Xiaoxiao (Female)", language: "zh-CN" },
+  { id: "zf_xiaoyi", label: "Xiaoyi (Female)", language: "zh-CN" },
+  { id: "zm_yunjian", label: "Yunjian (Male)", language: "zh-CN" },
+  { id: "zm_yunxi", label: "Yunxi (Male)", language: "zh-CN" },
+  { id: "zm_yunxia", label: "Yunxia (Male)", language: "zh-CN" },
+  { id: "zm_yunyang", label: "Yunyang (Male)", language: "zh-CN" },
+  { id: "ef_dora", label: "Dora (Female)", language: "es" },
+  { id: "em_alex", label: "Alex (Male)", language: "es" },
+  { id: "em_santa", label: "Santa (Male)", language: "es" },
+  { id: "ff_siwis", label: "Siwis (Female)", language: "fr-FR" },
+  { id: "hf_alpha", label: "Alpha (Female)", language: "hi" },
+  { id: "hf_beta", label: "Beta (Female)", language: "hi" },
+  { id: "hm_omega", label: "Omega (Male)", language: "hi" },
+  { id: "hm_psi", label: "Psi (Male)", language: "hi" },
+  { id: "if_sara", label: "Sara (Female)", language: "it" },
+  { id: "im_nicola", label: "Nicola (Male)", language: "it" },
+  { id: "pf_dora", label: "Dora (Female)", language: "pt-BR" },
+  { id: "pm_alex", label: "Alex (Male)", language: "pt-BR" },
+  { id: "pm_santa", label: "Santa (Male)", language: "pt-BR" },
 ];
 
 /** ElevenLabs API accepts roughly 0.7–1.2; values outside use client playbackRate. */
@@ -150,8 +219,10 @@ export const DEFAULT_SARVAM_VOICE = "shubh";
 export const DEFAULT_SARVAM_LANGUAGE = "en-IN";
 export const DEFAULT_SARVAM_EXPRESSIVENESS = "medium";
 export const DEFAULT_SMALLEST_AI_VOICE = "magnus";
+export const DEFAULT_KOKORO_VOICE = "af_bella";
 export const SPEECH_PROVIDERS = [
   { id: "webSpeech", label: "Browser Speech (free)" },
+  { id: "kokoro", label: "Kokoro Local" },
   { id: "elevenLabs", label: "ElevenLabs AI" },
   { id: "openAI", label: "OpenAI" },
   { id: "sarvam", label: "Sarvam AI" },
@@ -178,6 +249,7 @@ export const SETTINGS_KEYS = [
   "sarvamExpressiveness",
   "smallestAiApiKey",
   "smallestAiVoice",
+  "kokoroVoice",
   "languageCode",
   "playbackSpeed",
 ];
@@ -226,6 +298,10 @@ export function getSarvamExpressiveness(expressiveness) {
 
 export function getSmallestAIVoice(voice) {
   return SMALLEST_AI_FALLBACK_VOICES.find((v) => v.id === voice) ?? SMALLEST_AI_FALLBACK_VOICES[0];
+}
+
+export function getKokoroVoice(voice) {
+  return KOKORO_VOICES.find((v) => v.id === voice) ?? KOKORO_VOICES[0];
 }
 
 export function getLanguage(code) {
