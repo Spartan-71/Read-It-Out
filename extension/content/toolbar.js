@@ -207,6 +207,16 @@
     const style = document.createElement("style");
     style.id = "read-it-out-highlight-style";
     style.textContent = `
+      ::selection {
+        background: rgba(91, 192, 174, 0.32) !important;
+        color: inherit !important;
+      }
+
+      ::-moz-selection {
+        background: rgba(91, 192, 174, 0.32) !important;
+        color: inherit !important;
+      }
+
       .${PAGE_READER_HIGHLIGHT_CLASS} {
         background: rgba(91, 192, 174, 0.22) !important;
         box-shadow: 0 0 0 3px rgba(91, 192, 174, 0.18) !important;

@@ -15,7 +15,7 @@
   --radius-lg: 20px;
   --radius-md: 16px;
   --radius-sm: 12px;
-  --settings-popup-height: 560px;
+  --settings-popup-height: 600px;
   --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -81,7 +81,7 @@ html:has(.panel) body {
   flex-direction: column;
   width: 340px;
   height: var(--settings-popup-height);
-  padding: 18px;
+  padding: 14px;
 }
 
 .panel-header {
@@ -89,7 +89,7 @@ html:has(.panel) body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .brand {
