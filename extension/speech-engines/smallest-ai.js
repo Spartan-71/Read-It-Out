@@ -1,11 +1,12 @@
 import {
+  DEFAULT_SMALLEST_AI_MODEL,
   DEFAULT_SMALLEST_AI_VOICE,
   SMALLEST_AI_FALLBACK_VOICES,
+  SMALLEST_AI_MODELS,
 } from "../config.js";
 
-const MODEL = "lightning-v3.1";
-const STREAM_API = `https://api.smallest.ai/waves/v1/${MODEL}/stream`;
-const VOICES_API = `https://api.smallest.ai/waves/v1/voices?model=${MODEL}`;
+const STREAM_API = "https://api.smallest.ai/waves/v1/tts/live";
+const VOICES_API = "https://api.smallest.ai/waves/v1/voices";
 const SAMPLE_RATE = 24000;
 const OUTPUT_FORMAT = "mp3";
 const TARGET_CHARS = 140;
@@ -17,6 +18,12 @@ const DEFAULT_MIME_TYPE = "audio/mpeg";
 export function clampSmallestAISpeed(speed) {
   const value = speed ?? 1;
   return Math.min(SPEED_MAX, Math.max(SPEED_MIN, value));
+}
+
+function normalizeModel(model) {
+  return SMALLEST_AI_MODELS.some((option) => option.id === model)
+    ? model
+    : DEFAULT_SMALLEST_AI_MODEL;
 }
 
 function splitText(text, targetLength = TARGET_CHARS, maxLength = MAX_CHARS) {
@@ -106,10 +113,11 @@ function parseVoiceList(payload) {
   return voices.length ? voices : SMALLEST_AI_FALLBACK_VOICES;
 }
 
-export async function fetchVoices(apiKey) {
+export async function fetchVoices(apiKey, model = DEFAULT_SMALLEST_AI_MODEL) {
   if (!apiKey) return SMALLEST_AI_FALLBACK_VOICES;
+  const selectedModel = normalizeModel(model);
 
-  const response = await fetch(VOICES_API, {
+  const response = await fetch(`${VOICES_API}?model=${encodeURIComponent(selectedModel)}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -216,6 +224,7 @@ async function requestSpeechChunk(apiKey, text, options) {
     },
     body: JSON.stringify({
       text,
+      model: normalizeModel(options.model),
       voice_id: options.voice || DEFAULT_SMALLEST_AI_VOICE,
       speed: options.speed,
       language: "auto",
@@ -248,10 +257,12 @@ export async function streamTextToSpeech(apiKey, text, options = {}) {
   }
 
   const speed = clampSmallestAISpeed(options.playbackSpeed);
+  const model = normalizeModel(options.model);
   const buffers = [];
 
   for (const chunk of chunks) {
     buffers.push(...await requestSpeechChunk(apiKey, chunk, {
+      model,
       voice: options.voice ?? DEFAULT_SMALLEST_AI_VOICE,
       speed,
     }));

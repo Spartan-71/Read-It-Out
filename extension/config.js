@@ -37,9 +37,22 @@ export const LANGUAGES = [
 
 export const VOICES = [
   { id: "EXAVITQu4vr4xnSDxMaL", label: "Sarah" },
+  { id: "FGY2WhTYpPnrIDTdsKH5", label: "Laura" },
+  { id: "IKne3meq5aSn9XLyUdCD", label: "Charlie" },
   { id: "JBFqnCBsd6RMkjVDRZzb", label: "George" },
+  { id: "N2lVS1w4EtoT3dr4eOWO", label: "Callum" },
+  { id: "SAz9YHcvj6GT2YYXdXww", label: "River" },
+  { id: "TX3LPaxmHKxFdv7VOQHJ", label: "Liam" },
+  { id: "XB0fDUnXU5powFXDhCwa", label: "Charlotte" },
   { id: "onwK4e9ZLuTAKqWW03F9", label: "Daniel" },
   { id: "Xb7hH8MSUJpSbSDYk0k2", label: "Alice" },
+];
+
+export const ELEVENLABS_MODELS = [
+  { id: "eleven_v3", label: "Eleven v3" },
+  { id: "eleven_multilingual_v2", label: "Multilingual v2" },
+  { id: "eleven_flash_v2_5", label: "Flash v2.5" },
+  { id: "eleven_turbo_v2_5", label: "Turbo v2.5" },
 ];
 
 export const OPENAI_VOICES = [
@@ -63,50 +76,44 @@ export const OPENAI_MODELS = [
   { id: "tts-1", label: "TTS-1 (lower latency)" },
 ];
 
-export const OPENAI_STYLES = [
-  {
-    id: "podcast",
-    label: "Podcast",
-    instructions:
-      "Speak in a warm, conversational tone with natural pacing and slight pauses at paragraph breaks. Like a friend reading aloud to you.",
-  },
-  {
-    id: "newscast",
-    label: "Newscast",
-    instructions:
-      "Speak in a clear, neutral, and composed tone. Steady pace, crisp pronunciation. Professional broadcast style.",
-  },
-  {
-    id: "technical",
-    label: "Technical",
-    instructions:
-      "Speak in a focused, precise tone with measured pace and no dramatic inflection. Like a senior engineer explaining something clearly.",
-  },
-  {
-    id: "narrator",
-    label: "Narrator",
-    instructions:
-      "Speak with subtle expressiveness, honoring punctuation and rhythm. Gentle variation in tone to reflect the author's voice. Like a thoughtful narrator.",
-  },
-  {
-    id: "express",
-    label: "Express",
-    instructions:
-      "Speak at a brisk, efficient pace. Clear and direct with no unnecessary pauses. Like quickly scanning content out loud.",
-  },
-];
-
 export const SARVAM_VOICES = [
   { id: "shubh", label: "Shubh", gender: "Male" },
+  { id: "aditya", label: "Aditya", gender: "Male" },
+  { id: "rahul", label: "Rahul", gender: "Male" },
+  { id: "rohan", label: "Rohan", gender: "Male" },
+  { id: "amit", label: "Amit", gender: "Male" },
+  { id: "dev", label: "Dev", gender: "Male" },
+  { id: "ratan", label: "Ratan", gender: "Male" },
+  { id: "varun", label: "Varun", gender: "Male" },
   { id: "manan", label: "Manan", gender: "Male" },
+  { id: "sumit", label: "Sumit", gender: "Male" },
+  { id: "kabir", label: "Kabir", gender: "Male" },
+  { id: "aayan", label: "Aayan", gender: "Male" },
+  { id: "ashutosh", label: "Ashutosh", gender: "Male" },
+  { id: "advait", label: "Advait", gender: "Male" },
+  { id: "anand", label: "Anand", gender: "Male" },
+  { id: "tarun", label: "Tarun", gender: "Male" },
+  { id: "sunny", label: "Sunny", gender: "Male" },
   { id: "mani", label: "Mani", gender: "Male" },
   { id: "gokul", label: "Gokul", gender: "Male" },
   { id: "vijay", label: "Vijay", gender: "Male" },
+  { id: "mohit", label: "Mohit", gender: "Male" },
+  { id: "rehan", label: "Rehan", gender: "Male" },
   { id: "soham", label: "Soham", gender: "Male" },
   { id: "ritu", label: "Ritu", gender: "Female" },
   { id: "priya", label: "Priya", gender: "Female" },
   { id: "neha", label: "Neha", gender: "Female" },
   { id: "pooja", label: "Pooja", gender: "Female" },
+  { id: "simran", label: "Simran", gender: "Female" },
+  { id: "kavya", label: "Kavya", gender: "Female" },
+  { id: "ishita", label: "Ishita", gender: "Female" },
+  { id: "shreya", label: "Shreya", gender: "Female" },
+  { id: "roopa", label: "Roopa", gender: "Female" },
+  { id: "tanya", label: "Tanya", gender: "Female" },
+  { id: "shruti", label: "Shruti", gender: "Female" },
+  { id: "suhani", label: "Suhani", gender: "Female" },
+  { id: "kavitha", label: "Kavitha", gender: "Female" },
+  { id: "rupali", label: "Rupali", gender: "Female" },
 ];
 
 export const SARVAM_LANGUAGES = [
@@ -123,18 +130,17 @@ export const SARVAM_LANGUAGES = [
   { code: "en-IN", label: "English (India)" },
 ];
 
-export const SARVAM_EXPRESSIVENESS = [
-  { id: "low", label: "Low", temperature: 0.2 },
-  { id: "medium", label: "Medium", temperature: 0.5 },
-  { id: "high", label: "High", temperature: 0.8 },
-];
-
 export const SMALLEST_AI_FALLBACK_VOICES = [
   { id: "magnus", label: "Magnus - English (Male)" },
   { id: "maithili", label: "Maithili/English (Female)" },
   { id: "jeevan", label: "Jeevan - Tamil (Male)" },
   { id: "carlos", label: "Carlos (Male)" },
   { id: "rajeshwari", label: "Rajeshwari - Tamil (Female)" },
+];
+
+export const SMALLEST_AI_MODELS = [
+  { id: "lightning_v3.1", label: "Lightning v3.1" },
+  { id: "lightning_v3.1_pro", label: "Lightning v3.1 Pro" },
 ];
 
 export const KOKORO_LANGUAGES = [
@@ -211,13 +217,13 @@ export const API_SPEED_MIN = 0.7;
 export const API_SPEED_MAX = 1.2;
 
 export const DEFAULT_LANGUAGE_CODE = "en";
+export const DEFAULT_ELEVENLABS_MODEL = "eleven_v3";
 export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini-tts";
 export const DEFAULT_OPENAI_VOICE = "alloy";
-export const DEFAULT_OPENAI_STYLE = "podcast";
 export const DEFAULT_OPENAI_OUTPUT_FORMAT = "opus";
 export const DEFAULT_SARVAM_VOICE = "shubh";
 export const DEFAULT_SARVAM_LANGUAGE = "en-IN";
-export const DEFAULT_SARVAM_EXPRESSIVENESS = "medium";
+export const DEFAULT_SMALLEST_AI_MODEL = "lightning_v3.1";
 export const DEFAULT_SMALLEST_AI_VOICE = "magnus";
 export const DEFAULT_KOKORO_VOICE = "af_bella";
 export const KOKORO_PLATFORMS = [
@@ -245,15 +251,15 @@ export const SETTINGS_KEYS = [
   "floatingDockEnabled",
   "elevenLabsApiKey",
   "elevenLabsVoiceId",
+  "elevenLabsModel",
   "openaiApiKey",
   "openaiModel",
   "openaiVoice",
-  "openaiStyle",
   "sarvamApiKey",
   "sarvamVoice",
   "sarvamLanguage",
-  "sarvamExpressiveness",
   "smallestAiApiKey",
+  "smallestAiModel",
   "smallestAiVoice",
   "kokoroVoice",
   "kokoroPlatform",
@@ -279,6 +285,10 @@ export function getVoice(voiceId) {
   return VOICES.find((v) => v.id === voiceId) ?? VOICES[0];
 }
 
+export function getElevenLabsModel(model) {
+  return ELEVENLABS_MODELS.find((m) => m.id === model) ?? ELEVENLABS_MODELS[0];
+}
+
 export function getOpenAIModel(model) {
   return OPENAI_MODELS.find((m) => m.id === model) ?? OPENAI_MODELS[0];
 }
@@ -287,24 +297,20 @@ export function getOpenAIVoice(voice) {
   return OPENAI_VOICES.find((v) => v.id === voice) ?? OPENAI_VOICES[0];
 }
 
-export function getOpenAIStyle(style) {
-  return OPENAI_STYLES.find((s) => s.id === style) ?? OPENAI_STYLES[0];
-}
-
 export function getSarvamVoice(voice) {
-  return SARVAM_VOICES.find((v) => v.id === voice) ?? SARVAM_VOICES[0];
+  return SARVAM_VOICES.find((v) => v.id === voice) ?? SARVAM_VOICES.find((v) => v.id === DEFAULT_SARVAM_VOICE);
 }
 
 export function getSarvamLanguage(language) {
   return SARVAM_LANGUAGES.find((l) => l.code === language) ?? SARVAM_LANGUAGES.find((l) => l.code === DEFAULT_SARVAM_LANGUAGE);
 }
 
-export function getSarvamExpressiveness(expressiveness) {
-  return SARVAM_EXPRESSIVENESS.find((e) => e.id === expressiveness) ?? SARVAM_EXPRESSIVENESS[1];
-}
-
 export function getSmallestAIVoice(voice) {
   return SMALLEST_AI_FALLBACK_VOICES.find((v) => v.id === voice) ?? SMALLEST_AI_FALLBACK_VOICES[0];
+}
+
+export function getSmallestAIModel(model) {
+  return SMALLEST_AI_MODELS.find((m) => m.id === model) ?? SMALLEST_AI_MODELS[0];
 }
 
 export function getKokoroVoice(voice) {

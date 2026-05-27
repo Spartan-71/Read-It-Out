@@ -15,6 +15,7 @@
   --radius-lg: 20px;
   --radius-md: 16px;
   --radius-sm: 12px;
+  --settings-popup-height: 640px;
   --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -27,11 +28,13 @@
 html,
 body {
   opacity: 1;
+  overflow: hidden;
   background-color: #050707;
 }
 
 body {
   margin: 0;
+  width: max-content;
   font-family: var(--font);
   color: var(--text);
   background: var(--bg);
@@ -74,7 +77,10 @@ html:has(.panel) body {
 }
 
 .settings-panel {
+  display: flex;
+  flex-direction: column;
   width: 340px;
+  height: var(--settings-popup-height);
   padding: 18px;
 }
 
@@ -260,6 +266,11 @@ html:has(.panel) body {
 
 .settings-tab-panel[hidden] {
   display: none;
+}
+
+.settings-tab-panel.is-active {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .panel.is-ready .status-pill .status-dot {
@@ -492,6 +503,10 @@ html:has(.panel) body {
   grid-template-columns: 1fr;
 }
 
+.settings-panel.uses-elevenlabs .language-row {
+  display: none;
+}
+
 .settings-panel.uses-openai .language-row {
   display: none;
 }
@@ -511,12 +526,20 @@ html:has(.panel) body {
   margin-top: 14px;
 }
 
-#openai-style-section {
-  margin-top: 16px;
+.elevenlabs-field-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
-.sarvam-expressiveness-section {
-  margin-top: 16px;
+.elevenlabs-language-field {
+  grid-column: 1 / -1;
+}
+
+.openai-field-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+
+.sarvam-model-field {
+  grid-column: 1 / -1;
 }
 
 .provider-subsection {
@@ -577,37 +600,6 @@ html:has(.panel) body {
   font-size: 14px;
 }
 
-.style-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.style-tag {
-  padding: 8px 14px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-muted);
-  opacity: 1;
-  background-color: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.style-tag:hover:not(.active) {
-  border-color: #3a4a48;
-  color: var(--text);
-}
-
-.style-tag.active {
-  color: #04100e;
-  background: #9cf4e5;
-  border-color: #9cf4e5;
-}
-
 .settings-section {
   margin-bottom: 16px;
 }
@@ -628,6 +620,20 @@ html:has(.panel) body {
   outline: none;
   border-color: #63dfcd;
   box-shadow: 0 0 0 3px rgba(99, 223, 205, 0.15);
+}
+
+.settings-static-value {
+  width: 100%;
+  padding: 10px 12px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 
 .settings-hint {

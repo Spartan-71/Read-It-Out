@@ -65,6 +65,29 @@
               >Get an API key</a
             >
           </p>
+
+          <div class="settings-field-grid elevenlabs-field-grid">
+            <section aria-labelledby="elevenlabs-model-label">
+              <p class="section-label" id="elevenlabs-model-label">MODEL</p>
+              <div class="field-select">
+                <select id="elevenlabs-model" aria-label="ElevenLabs model"></select>
+              </div>
+            </section>
+
+            <section aria-labelledby="elevenlabs-voice-label">
+              <p class="section-label" id="elevenlabs-voice-label">VOICE</p>
+              <div class="field-select">
+                <select id="elevenlabs-voice" aria-label="ElevenLabs voice"></select>
+              </div>
+            </section>
+
+            <section class="elevenlabs-language-field" aria-labelledby="elevenlabs-language-label">
+              <p class="section-label" id="elevenlabs-language-label">LANGUAGE</p>
+              <div class="field-select">
+                <select id="elevenlabs-language" aria-label="ElevenLabs language"></select>
+              </div>
+            </section>
+          </div>
         </section>
 
         <section class="settings-section provider-settings" id="openai-section" aria-labelledby="openai-api-label">
@@ -86,7 +109,7 @@
             >
           </p>
 
-          <div class="settings-field-grid">
+          <div class="settings-field-grid openai-field-grid">
             <section aria-labelledby="openai-model-label">
               <p class="section-label" id="openai-model-label">MODEL</p>
               <div class="field-select">
@@ -101,11 +124,6 @@
               </div>
             </section>
           </div>
-
-          <section id="openai-style-section" aria-labelledby="openai-style-label">
-            <p class="section-label" id="openai-style-label">STYLE</p>
-            <div class="style-tags" id="openai-style-tags" role="group" aria-label="OpenAI style"></div>
-          </section>
         </section>
 
       <section class="settings-section provider-settings" id="sarvam-section" aria-labelledby="sarvam-api-label">
@@ -128,6 +146,11 @@
           </p>
 
           <div class="settings-field-grid">
+            <section class="sarvam-model-field" aria-labelledby="sarvam-model-label">
+              <p class="section-label" id="sarvam-model-label">MODEL</p>
+              <div class="settings-static-value" aria-label="Sarvam model">Bulbul v3</div>
+            </section>
+
             <section aria-labelledby="sarvam-voice-label">
               <p class="section-label" id="sarvam-voice-label">VOICE</p>
               <div class="field-select">
@@ -136,28 +159,12 @@
             </section>
 
             <section aria-labelledby="sarvam-language-label">
-              <p class="section-label" id="sarvam-language-label">LANGUAGE</p>
+              <p class="section-label" id="sarvam-language-label">INDIAN LANGUAGE</p>
               <div class="field-select">
                 <select id="sarvam-language" aria-label="Sarvam language"></select>
               </div>
             </section>
           </div>
-
-          <section class="sarvam-expressiveness-section" aria-labelledby="sarvam-expressiveness-label">
-            <p
-              class="section-label"
-              id="sarvam-expressiveness-label"
-              title="Controls voice variation. Lower = consistent, Higher = expressive."
-            >
-              EXPRESSIVENESS
-            </p>
-            <div
-              class="speed-segmented compact-segmented"
-              id="sarvam-expressiveness"
-              role="group"
-              aria-label="Expressiveness"
-            ></div>
-        </section>
       </section>
 
       <section class="settings-section provider-settings" id="smallest-ai-section" aria-labelledby="smallest-ai-api-label">
@@ -179,12 +186,21 @@
           >
         </p>
 
-        <section class="provider-subsection" aria-labelledby="smallest-ai-voice-label">
-          <p class="section-label" id="smallest-ai-voice-label">VOICE</p>
-          <div class="field-select">
-            <select id="smallest-ai-voice" aria-label="Smallest AI voice"></select>
-          </div>
-        </section>
+        <div class="settings-field-grid">
+          <section aria-labelledby="smallest-ai-model-label">
+            <p class="section-label" id="smallest-ai-model-label">MODEL</p>
+            <div class="field-select">
+              <select id="smallest-ai-model" aria-label="Smallest AI model"></select>
+            </div>
+          </section>
+
+          <section aria-labelledby="smallest-ai-voice-label">
+            <p class="section-label" id="smallest-ai-voice-label">VOICE</p>
+            <div class="field-select">
+              <select id="smallest-ai-voice" aria-label="Smallest AI voice"></select>
+            </div>
+          </section>
+        </div>
       </section>
 
       <section class="settings-section provider-settings" id="kokoro-section" aria-labelledby="kokoro-settings-label">

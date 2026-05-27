@@ -1,15 +1,13 @@
 import {
-  DEFAULT_SARVAM_EXPRESSIVENESS,
   DEFAULT_SARVAM_LANGUAGE,
   DEFAULT_SARVAM_VOICE,
-  getSarvamExpressiveness,
   getSarvamLanguage,
   getSarvamVoice,
 } from "../config.js";
 
 const SARVAM_TTS_API = "https://api.sarvam.ai/text-to-speech";
 const MODEL = "bulbul:v3";
-const MAX_CHARS = 2000;
+const MAX_CHARS = 2500;
 const PACE_MIN = 0.5;
 const PACE_MAX = 2.0;
 const DEFAULT_MIME_TYPE = "audio/wav";
@@ -93,7 +91,6 @@ async function requestSpeechChunk(apiKey, input, options) {
       speaker: getSarvamVoice(options.voice).id,
       model: MODEL,
       pace: options.pace,
-      temperature: getSarvamExpressiveness(options.expressiveness).temperature,
     }),
   });
 
@@ -144,7 +141,6 @@ export async function streamTextToSpeech(apiKey, text, options = {}) {
       await requestSpeechChunk(apiKey, chunk, {
         voice: options.voice ?? DEFAULT_SARVAM_VOICE,
         language: options.language ?? DEFAULT_SARVAM_LANGUAGE,
-        expressiveness: options.expressiveness ?? DEFAULT_SARVAM_EXPRESSIVENESS,
         pace,
       }),
     );

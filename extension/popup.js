@@ -1,30 +1,31 @@
 import {
   DEFAULT_LANGUAGE_CODE,
+  DEFAULT_ELEVENLABS_MODEL,
   DEFAULT_OPENAI_MODEL,
-  DEFAULT_OPENAI_STYLE,
   DEFAULT_OPENAI_VOICE,
   DEFAULT_PLAYBACK_SPEED,
   DEFAULT_KOKORO_VOICE,
   DEFAULT_KOKORO_PLATFORM,
   KOKORO_LANGUAGES,
   KOKORO_PLATFORMS,
-  DEFAULT_SARVAM_EXPRESSIVENESS,
   DEFAULT_SARVAM_LANGUAGE,
   DEFAULT_SARVAM_VOICE,
+  DEFAULT_SMALLEST_AI_MODEL,
   DEFAULT_SMALLEST_AI_VOICE,
   KOKORO_VOICES,
   DEFAULT_SPEECH_PROVIDER,
+  ELEVENLABS_MODELS,
   LANGUAGES,
   OPENAI_MODELS,
-  OPENAI_STYLES,
   OPENAI_VOICES,
   PLAYBACK_SPEEDS,
-  SARVAM_EXPRESSIVENESS,
   SARVAM_LANGUAGES,
   SARVAM_VOICES,
   SMALLEST_AI_FALLBACK_VOICES,
+  SMALLEST_AI_MODELS,
   SETTINGS_KEYS,
   SPEECH_PROVIDERS,
+  VOICES,
   isKokoroPlatform,
   isSpeechProviderId,
   languageOptionLabel,
@@ -40,15 +41,15 @@ const selectionPopupEnabledInput = document.getElementById("selection-popup-enab
 const floatingDockEnabledInput = document.getElementById("floating-dock-enabled");
 const elevenLabsSection = document.getElementById("elevenlabs-section");
 const openAISection = document.getElementById("openai-section");
-const openAIStyleSection = document.getElementById("openai-style-section");
 const sarvamSection = document.getElementById("sarvam-section");
 const smallestAISection = document.getElementById("smallest-ai-section");
 const kokoroSection = document.getElementById("kokoro-section");
 const speedButtonsEl = document.getElementById("speed-buttons");
-const sarvamExpressivenessEl = document.getElementById("sarvam-expressiveness");
 const languageSelect = document.getElementById("language");
-const openAIStyleTagsEl = document.getElementById("openai-style-tags");
 const elevenLabsApiKeyInput = document.getElementById("elevenlabs-api-key");
+const elevenLabsModelSelect = document.getElementById("elevenlabs-model");
+const elevenLabsVoiceSelect = document.getElementById("elevenlabs-voice");
+const elevenLabsLanguageSelect = document.getElementById("elevenlabs-language");
 const openAIApiKeyInput = document.getElementById("openai-api-key");
 const openAIModelSelect = document.getElementById("openai-model");
 const openAIVoiceSelect = document.getElementById("openai-voice");
@@ -56,6 +57,7 @@ const sarvamApiKeyInput = document.getElementById("sarvam-api-key");
 const sarvamVoiceSelect = document.getElementById("sarvam-voice");
 const sarvamLanguageSelect = document.getElementById("sarvam-language");
 const smallestAIApiKeyInput = document.getElementById("smallest-ai-api-key");
+const smallestAIModelSelect = document.getElementById("smallest-ai-model");
 const smallestAIVoiceSelect = document.getElementById("smallest-ai-voice");
 const kokoroVoiceSelect = document.getElementById("kokoro-voice");
 const kokoroPlatformSelect = document.getElementById("kokoro-platform");
@@ -63,21 +65,26 @@ const saveButton = document.getElementById("save-settings");
 const errorToast = document.getElementById("popup-error-toast");
 
 let playbackSpeed = DEFAULT_PLAYBACK_SPEED;
-let openAIStyle = DEFAULT_OPENAI_STYLE;
-let sarvamExpressiveness = DEFAULT_SARVAM_EXPRESSIVENESS;
 let speechProvider = DEFAULT_SPEECH_PROVIDER;
 let savedLanguageCode = DEFAULT_LANGUAGE_CODE;
 let errorToastTimer = null;
 let smallestAIVoiceCache = null;
 let smallestAIVoiceCacheKey = "";
 
+function schedulePopupResize() {
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
+}
+
 function setPanelState(state) {
   form.classList.remove("is-ready", "is-playing", "is-generating", "is-paused", "is-saved");
   form.classList.add(`is-${state}`);
+  schedulePopupResize();
 }
 
 function setStatus(label) {
   statusText.textContent = label;
+  schedulePopupResize();
 }
 
 function showToast(message, type = "error") {
@@ -85,9 +92,11 @@ function showToast(message, type = "error") {
   errorToast.textContent = message.length > 180 ? `${message.slice(0, 177)}...` : message;
   errorToast.classList.toggle("is-success", type === "success");
   errorToast.hidden = false;
+  schedulePopupResize();
   clearTimeout(errorToastTimer);
   errorToastTimer = setTimeout(() => {
     errorToast.hidden = true;
+    schedulePopupResize();
   }, 3600);
 }
 
@@ -108,6 +117,7 @@ function activateTab(targetId) {
     panel.classList.toggle("is-active", active);
     panel.hidden = !active;
   }
+  schedulePopupResize();
 }
 
 function formatSpeed(speed) {
@@ -118,22 +128,6 @@ function updateSpeedButtons() {
   for (const btn of speedButtonsEl.querySelectorAll("[data-speed]")) {
     const speed = Number(btn.dataset.speed);
     const active = speed === playbackSpeed;
-    btn.classList.toggle("active", active);
-    btn.setAttribute("aria-pressed", String(active));
-  }
-}
-
-function updateOpenAIStyleTags() {
-  for (const btn of openAIStyleTagsEl.querySelectorAll("[data-openai-style]")) {
-    const active = btn.dataset.openaiStyle === openAIStyle;
-    btn.classList.toggle("active", active);
-    btn.setAttribute("aria-pressed", String(active));
-  }
-}
-
-function updateSarvamExpressiveness() {
-  for (const btn of sarvamExpressivenessEl.querySelectorAll("[data-expressiveness]")) {
-    const active = btn.dataset.expressiveness === sarvamExpressiveness;
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-pressed", String(active));
   }
@@ -155,9 +149,7 @@ function updateProviderVisibility() {
   if (sarvamSection) sarvamSection.hidden = !sarvam;
   if (smallestAISection) smallestAISection.hidden = !smallestAI;
   if (kokoroSection) kokoroSection.hidden = !kokoro;
-  if (openAIStyleSection) {
-    openAIStyleSection.hidden = !openAI || openAIModelSelect.value === "tts-1";
-  }
+  schedulePopupResize();
 }
 
 function webSpeechLanguageCodes() {
@@ -199,6 +191,25 @@ function populateLanguageSelect(preferredCode = languageSelect.value || savedLan
   languageSelect.value = options.some((lang) => lang.code === preferredCode)
     ? preferredCode
     : languageSelect.options[0]?.value || DEFAULT_LANGUAGE_CODE;
+}
+
+function populateElevenLabsLanguageSelect(preferredCode = elevenLabsLanguageSelect.value || savedLanguageCode) {
+  const options = LANGUAGES.filter((lang) => lang.code !== "");
+  populateSelect(
+    elevenLabsLanguageSelect,
+    options,
+    (lang) => lang.code,
+    (lang) => languageOptionLabel(lang),
+  );
+  elevenLabsLanguageSelect.value = options.some((lang) => lang.code === preferredCode)
+    ? preferredCode
+    : DEFAULT_LANGUAGE_CODE;
+}
+
+function selectedLanguageCode() {
+  return speechProvider === "elevenLabs"
+    ? elevenLabsLanguageSelect.value || DEFAULT_LANGUAGE_CODE
+    : languageSelect.value || DEFAULT_LANGUAGE_CODE;
 }
 
 function populateSelect(select, options, getValue, getLabel) {
@@ -249,6 +260,7 @@ function setSmallestAIVoiceLoading() {
 
 async function loadSmallestAIVoices(preferredVoice = smallestAIVoiceSelect.value) {
   const apiKey = smallestAIApiKeyInput.value.trim();
+  const model = smallestAIModelSelect.value || DEFAULT_SMALLEST_AI_MODEL;
   if (!apiKey) {
     smallestAIVoiceCache = null;
     smallestAIVoiceCacheKey = "";
@@ -257,7 +269,8 @@ async function loadSmallestAIVoices(preferredVoice = smallestAIVoiceSelect.value
     return;
   }
 
-  if (smallestAIVoiceCache && smallestAIVoiceCacheKey === apiKey) {
+  const cacheKey = `${apiKey}:${model}`;
+  if (smallestAIVoiceCache && smallestAIVoiceCacheKey === cacheKey) {
     populateSmallestAIVoiceSelect(smallestAIVoiceCache, preferredVoice);
     smallestAIVoiceSelect.disabled = false;
     return;
@@ -265,18 +278,19 @@ async function loadSmallestAIVoices(preferredVoice = smallestAIVoiceSelect.value
 
   setSmallestAIVoiceLoading();
   try {
-    const voices = await fetchSmallestAIVoices(apiKey);
+    const voices = await fetchSmallestAIVoices(apiKey, model);
     smallestAIVoiceCache = voices;
-    smallestAIVoiceCacheKey = apiKey;
+    smallestAIVoiceCacheKey = cacheKey;
     populateSmallestAIVoiceSelect(voices, preferredVoice);
   } catch (_err) {
     populateSmallestAIVoiceSelect(SMALLEST_AI_FALLBACK_VOICES, preferredVoice);
   } finally {
     smallestAIVoiceSelect.disabled = false;
+    schedulePopupResize();
   }
 }
 
-function populateSarvamVoiceSelect() {
+function populateSarvamVoiceSelect(preferredVoice = sarvamVoiceSelect.value || DEFAULT_SARVAM_VOICE) {
   sarvamVoiceSelect.replaceChildren();
   for (const gender of ["Male", "Female"]) {
     const group = document.createElement("optgroup");
@@ -287,8 +301,11 @@ function populateSarvamVoiceSelect() {
       option.textContent = voice.label;
       group.appendChild(option);
     }
-    sarvamVoiceSelect.appendChild(group);
+    if (group.children.length > 0) sarvamVoiceSelect.appendChild(group);
   }
+  sarvamVoiceSelect.value = SARVAM_VOICES.some((voice) => voice.id === preferredVoice)
+    ? preferredVoice
+    : DEFAULT_SARVAM_VOICE;
 }
 
 function initControls() {
@@ -298,6 +315,19 @@ function initControls() {
     (provider) => provider.id,
     (provider) => provider.label,
   );
+  populateSelect(
+    elevenLabsModelSelect,
+    ELEVENLABS_MODELS,
+    (model) => model.id,
+    (model) => model.label,
+  );
+  populateSelect(
+    elevenLabsVoiceSelect,
+    VOICES,
+    (voice) => voice.id,
+    (voice) => voice.label,
+  );
+  populateElevenLabsLanguageSelect(DEFAULT_LANGUAGE_CODE);
   populateSelect(
     openAIModelSelect,
     OPENAI_MODELS,
@@ -310,7 +340,7 @@ function initControls() {
     (voice) => voice.id,
     (voice) => voice.label,
   );
-  populateSarvamVoiceSelect();
+  populateSarvamVoiceSelect(DEFAULT_SARVAM_VOICE);
   populateSelect(
     sarvamLanguageSelect,
     SARVAM_LANGUAGES,
@@ -318,6 +348,12 @@ function initControls() {
     (language) => language.label,
   );
   populateSmallestAIVoiceSelect(SMALLEST_AI_FALLBACK_VOICES, DEFAULT_SMALLEST_AI_VOICE);
+  populateSelect(
+    smallestAIModelSelect,
+    SMALLEST_AI_MODELS,
+    (model) => model.id,
+    (model) => model.label,
+  );
   populateSelect(
     kokoroPlatformSelect,
     KOKORO_PLATFORMS,
@@ -341,40 +377,6 @@ function initControls() {
     speedButtonsEl.appendChild(btn);
   }
 
-  for (const style of OPENAI_STYLES) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "style-tag";
-    btn.dataset.openaiStyle = style.id;
-    btn.textContent = style.label;
-    btn.title = style.instructions;
-    btn.setAttribute("aria-pressed", "false");
-    btn.addEventListener("click", () => {
-      openAIStyle = OPENAI_STYLES.some((s) => s.id === style.id)
-        ? style.id
-        : DEFAULT_OPENAI_STYLE;
-      updateOpenAIStyleTags();
-      markDirty();
-    });
-    openAIStyleTagsEl.appendChild(btn);
-  }
-
-  for (const option of SARVAM_EXPRESSIVENESS) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.dataset.expressiveness = option.id;
-    btn.textContent = option.label;
-    btn.setAttribute("aria-pressed", "false");
-    btn.title = "Controls voice variation. Lower = consistent, Higher = expressive.";
-    btn.addEventListener("click", () => {
-      sarvamExpressiveness = SARVAM_EXPRESSIVENESS.some((e) => e.id === option.id)
-        ? option.id
-        : DEFAULT_SARVAM_EXPRESSIVENESS;
-      updateSarvamExpressiveness();
-      markDirty();
-    });
-    sarvamExpressivenessEl.appendChild(btn);
-  }
 }
 
 async function loadSettings() {
@@ -388,6 +390,12 @@ async function loadSettings() {
   floatingDockEnabledInput.checked = stored.floatingDockEnabled !== false;
 
   elevenLabsApiKeyInput.value = stored.elevenLabsApiKey || "";
+  elevenLabsModelSelect.value = ELEVENLABS_MODELS.some((model) => model.id === stored.elevenLabsModel)
+    ? stored.elevenLabsModel
+    : DEFAULT_ELEVENLABS_MODEL;
+  elevenLabsVoiceSelect.value = VOICES.some((voice) => voice.id === stored.elevenLabsVoiceId)
+    ? stored.elevenLabsVoiceId
+    : VOICES[0].id;
   openAIApiKeyInput.value = stored.openaiApiKey || "";
   openAIModelSelect.value = OPENAI_MODELS.some((model) => model.id === stored.openaiModel)
     ? stored.openaiModel
@@ -395,25 +403,21 @@ async function loadSettings() {
   openAIVoiceSelect.value = OPENAI_VOICES.some((voice) => voice.id === stored.openaiVoice)
     ? stored.openaiVoice
     : DEFAULT_OPENAI_VOICE;
-  openAIStyle = OPENAI_STYLES.some((style) => style.id === stored.openaiStyle)
-    ? stored.openaiStyle
-    : DEFAULT_OPENAI_STYLE;
   sarvamApiKeyInput.value = stored.sarvamApiKey || "";
-  sarvamVoiceSelect.value = SARVAM_VOICES.some((voice) => voice.id === stored.sarvamVoice)
-    ? stored.sarvamVoice
-    : DEFAULT_SARVAM_VOICE;
+  populateSarvamVoiceSelect(stored.sarvamVoice || DEFAULT_SARVAM_VOICE);
   sarvamLanguageSelect.value = SARVAM_LANGUAGES.some((language) => language.code === stored.sarvamLanguage)
     ? stored.sarvamLanguage
     : DEFAULT_SARVAM_LANGUAGE;
-  sarvamExpressiveness = SARVAM_EXPRESSIVENESS.some((option) => option.id === stored.sarvamExpressiveness)
-    ? stored.sarvamExpressiveness
-    : DEFAULT_SARVAM_EXPRESSIVENESS;
   smallestAIApiKeyInput.value = stored.smallestAiApiKey || "";
+  smallestAIModelSelect.value = SMALLEST_AI_MODELS.some((model) => model.id === stored.smallestAiModel)
+    ? stored.smallestAiModel
+    : DEFAULT_SMALLEST_AI_MODEL;
   populateSmallestAIVoiceSelect(SMALLEST_AI_FALLBACK_VOICES, stored.smallestAiVoice || DEFAULT_SMALLEST_AI_VOICE);
   loadSmallestAIVoices(stored.smallestAiVoice || DEFAULT_SMALLEST_AI_VOICE);
 
   savedLanguageCode = stored.languageCode ?? DEFAULT_LANGUAGE_CODE;
   populateLanguageSelect(savedLanguageCode);
+  populateElevenLabsLanguageSelect(savedLanguageCode);
   populateKokoroVoiceSelect(stored.kokoroVoice || DEFAULT_KOKORO_VOICE);
   kokoroPlatformSelect.value = isKokoroPlatform(stored.kokoroPlatform)
     ? stored.kokoroPlatform
@@ -425,8 +429,6 @@ async function loadSettings() {
     : DEFAULT_PLAYBACK_SPEED;
 
   updateSpeedButtons();
-  updateOpenAIStyleTags();
-  updateSarvamExpressiveness();
   setPanelState("ready");
   setStatus("Saved");
 }
@@ -442,21 +444,22 @@ async function saveSettings() {
       selectionPopupEnabled: selectionPopupEnabledInput.checked,
       floatingDockEnabled: floatingDockEnabledInput.checked,
       elevenLabsApiKey: elevenLabsApiKeyInput.value.trim(),
+      elevenLabsModel: elevenLabsModelSelect.value || DEFAULT_ELEVENLABS_MODEL,
+      elevenLabsVoiceId: elevenLabsVoiceSelect.value || VOICES[0].id,
       openaiApiKey: openAIApiKeyInput.value.trim(),
       openaiModel: openAIModelSelect.value || DEFAULT_OPENAI_MODEL,
       openaiVoice: openAIVoiceSelect.value || DEFAULT_OPENAI_VOICE,
-      openaiStyle: openAIStyle || DEFAULT_OPENAI_STYLE,
       sarvamApiKey: sarvamApiKeyInput.value.trim(),
       sarvamVoice: sarvamVoiceSelect.value || DEFAULT_SARVAM_VOICE,
       sarvamLanguage: sarvamLanguageSelect.value || DEFAULT_SARVAM_LANGUAGE,
-      sarvamExpressiveness: sarvamExpressiveness || DEFAULT_SARVAM_EXPRESSIVENESS,
       smallestAiApiKey: smallestAIApiKeyInput.value.trim(),
+      smallestAiModel: smallestAIModelSelect.value || DEFAULT_SMALLEST_AI_MODEL,
       smallestAiVoice: smallestAIVoiceSelect.value || DEFAULT_SMALLEST_AI_VOICE,
       kokoroVoice: kokoroVoiceSelect.value || DEFAULT_KOKORO_VOICE,
       kokoroPlatform: isKokoroPlatform(kokoroPlatformSelect.value)
         ? kokoroPlatformSelect.value
         : DEFAULT_KOKORO_PLATFORM,
-      languageCode: languageSelect.value || DEFAULT_LANGUAGE_CODE,
+      languageCode: selectedLanguageCode(),
       playbackSpeed,
     });
     setPanelState("saved");
@@ -482,6 +485,13 @@ for (const button of tabButtons) {
 }
 
 elevenLabsApiKeyInput.addEventListener("input", markDirty);
+elevenLabsModelSelect.addEventListener("change", markDirty);
+elevenLabsVoiceSelect.addEventListener("change", markDirty);
+elevenLabsLanguageSelect.addEventListener("change", () => {
+  savedLanguageCode = elevenLabsLanguageSelect.value || DEFAULT_LANGUAGE_CODE;
+  languageSelect.value = savedLanguageCode;
+  markDirty();
+});
 openAIApiKeyInput.addEventListener("input", markDirty);
 openAIVoiceSelect.addEventListener("change", markDirty);
 sarvamApiKeyInput.addEventListener("input", markDirty);
@@ -493,6 +503,12 @@ smallestAIApiKeyInput.addEventListener("change", () => {
 });
 smallestAIApiKeyInput.addEventListener("blur", () => {
   loadSmallestAIVoices();
+});
+smallestAIModelSelect.addEventListener("change", () => {
+  smallestAIVoiceCache = null;
+  smallestAIVoiceCacheKey = "";
+  loadSmallestAIVoices();
+  markDirty();
 });
 smallestAIVoiceSelect.addEventListener("change", markDirty);
 kokoroVoiceSelect.addEventListener("change", markDirty);
@@ -509,6 +525,7 @@ speechProviderSelect.addEventListener("change", () => {
     : DEFAULT_SPEECH_PROVIDER;
   updateProviderVisibility();
   populateLanguageSelect(languageSelect.value || savedLanguageCode);
+  populateElevenLabsLanguageSelect(elevenLabsLanguageSelect.value || savedLanguageCode);
   if (speechProvider === "kokoro") {
     populateKokoroVoiceSelect();
   }
@@ -516,6 +533,7 @@ speechProviderSelect.addEventListener("change", () => {
 });
 languageSelect.addEventListener("change", () => {
   savedLanguageCode = languageSelect.value || DEFAULT_LANGUAGE_CODE;
+  elevenLabsLanguageSelect.value = savedLanguageCode;
   if (speechProvider === "kokoro") {
     populateKokoroVoiceSelect();
   }
@@ -529,5 +547,7 @@ if ("speechSynthesis" in window) {
   });
 }
 
+window.addEventListener("load", schedulePopupResize);
+
 initControls();
-loadSettings();
+loadSettings().finally(schedulePopupResize);

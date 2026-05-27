@@ -1,12 +1,13 @@
 import {
   clampApiSpeed,
   clientPlaybackRate,
+  DEFAULT_ELEVENLABS_MODEL,
 } from "../config.js";
 
 const ELEVENLABS_API = "https://api.elevenlabs.io/v1";
 
 export const DEFAULT_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
-export const MODEL_ID = "eleven_v3";
+export const MODEL_ID = DEFAULT_ELEVENLABS_MODEL;
 export const DEFAULT_OUTPUT_FORMAT = "mp3_44100_128";
 
 export { clampApiSpeed, clientPlaybackRate };

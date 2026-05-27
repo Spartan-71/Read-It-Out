@@ -1,16 +1,14 @@
-import { DEFAULT_VOICE_ID, streamTextToSpeech } from "./speech-engines/elevenlabs.js";
+import { DEFAULT_VOICE_ID, MODEL_ID as DEFAULT_ELEVENLABS_MODEL_ID, streamTextToSpeech } from "./speech-engines/elevenlabs.js";
 import {
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_OUTPUT_FORMAT,
-  DEFAULT_OPENAI_STYLE,
   DEFAULT_OPENAI_VOICE,
   DEFAULT_KOKORO_PLATFORM,
   DEFAULT_KOKORO_VOICE,
-  DEFAULT_SARVAM_EXPRESSIVENESS,
   DEFAULT_SARVAM_LANGUAGE,
   DEFAULT_SARVAM_VOICE,
+  DEFAULT_SMALLEST_AI_MODEL,
   DEFAULT_SMALLEST_AI_VOICE,
-  getOpenAIStyle,
 } from "./config.js";
 import { streamTextToSpeech as streamOpenAITextToSpeech } from "./speech-engines/openai.js";
 import { streamTextToSpeech as streamSarvamTextToSpeech } from "./speech-engines/sarvam.js";
@@ -99,15 +97,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           "speechProvider",
           "elevenLabsApiKey",
           "elevenLabsVoiceId",
+          "elevenLabsModel",
           "openaiApiKey",
           "openaiModel",
           "openaiVoice",
-          "openaiStyle",
           "sarvamApiKey",
           "sarvamVoice",
           "sarvamLanguage",
-          "sarvamExpressiveness",
           "smallestAiApiKey",
+          "smallestAiModel",
           "smallestAiVoice",
           "kokoroVoice",
           "kokoroPlatform",
@@ -142,7 +140,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           result = await streamOpenAITextToSpeech(apiKey, message.text, {
             model: stored.openaiModel || DEFAULT_OPENAI_MODEL,
             voice: stored.openaiVoice || DEFAULT_OPENAI_VOICE,
-            instructions: getOpenAIStyle(stored.openaiStyle || DEFAULT_OPENAI_STYLE).instructions,
             outputFormat: message.outputFormat || DEFAULT_OPENAI_OUTPUT_FORMAT,
             playbackSpeed: message.playbackSpeed ?? stored.playbackSpeed,
           });
@@ -156,7 +153,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           result = await streamSarvamTextToSpeech(apiKey, message.text, {
             voice: stored.sarvamVoice || DEFAULT_SARVAM_VOICE,
             language: stored.sarvamLanguage || DEFAULT_SARVAM_LANGUAGE,
-            expressiveness: stored.sarvamExpressiveness || DEFAULT_SARVAM_EXPRESSIVENESS,
             playbackSpeed: message.playbackSpeed ?? stored.playbackSpeed,
           });
         } else if (provider === "smallestAI") {
@@ -167,6 +163,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           }
 
           result = await streamSmallestAITextToSpeech(apiKey, message.text, {
+            model: stored.smallestAiModel || DEFAULT_SMALLEST_AI_MODEL,
             voice: stored.smallestAiVoice || DEFAULT_SMALLEST_AI_VOICE,
             playbackSpeed: message.playbackSpeed ?? stored.playbackSpeed,
           });
@@ -179,6 +176,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
           result = await streamTextToSpeech(apiKey, message.text, {
             voiceId: stored.elevenLabsVoiceId || DEFAULT_VOICE_ID,
+            modelId: stored.elevenLabsModel || DEFAULT_ELEVENLABS_MODEL_ID,
             languageCode: stored.languageCode || null,
             playbackSpeed: message.playbackSpeed ?? stored.playbackSpeed,
             outputFormat: message.outputFormat,

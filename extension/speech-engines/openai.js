@@ -128,11 +128,6 @@ async function requestSpeechChunk(apiKey, input, options) {
     speed: options.apiSpeed,
   };
 
-  const instructions = String(options.instructions || "").trim();
-  if (model === DEFAULT_OPENAI_MODEL && instructions) {
-    body.instructions = instructions;
-  }
-
   const response = await fetch(OPENAI_SPEECH_API, {
     method: "POST",
     headers: {
@@ -176,7 +171,6 @@ export async function streamTextToSpeech(apiKey, text, options = {}) {
     const audio = await requestSpeechChunk(apiKey, chunk, {
       model: options.model ?? DEFAULT_OPENAI_MODEL,
       voice: options.voice ?? DEFAULT_OPENAI_VOICE,
-      instructions: options.instructions,
       outputFormat,
       apiSpeed,
     });
