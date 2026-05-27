@@ -203,17 +203,25 @@
   }
 
   function ensurePageHighlightStyles() {
-    if (document.getElementById("read-it-out-highlight-style")) return;
+    const existingStyle = document.getElementById("read-it-out-highlight-style");
+    if (existingStyle) {
+      (document.head || document.documentElement).appendChild(existingStyle);
+      return;
+    }
     const style = document.createElement("style");
     style.id = "read-it-out-highlight-style";
     style.textContent = `
-      ::selection {
-        background: rgba(91, 192, 174, 0.32) !important;
+      ::selection,
+      *::selection,
+      *:not(#read-it-out-selection-style-boost)::selection {
+        background: rgba(91, 192, 174, 0.22) !important;
         color: inherit !important;
       }
 
-      ::-moz-selection {
-        background: rgba(91, 192, 174, 0.32) !important;
+      ::-moz-selection,
+      *::-moz-selection,
+      *:not(#read-it-out-selection-style-boost)::-moz-selection {
+        background: rgba(91, 192, 174, 0.22) !important;
         color: inherit !important;
       }
 
@@ -1595,6 +1603,7 @@
   }
 
   function handleSelectionUpdate() {
+    ensurePageHighlightStyles();
     requestAnimationFrame(() => {
       const snapshot = getSelectionSnapshot();
       const { text } = snapshot;
