@@ -15,7 +15,7 @@
   --radius-lg: 20px;
   --radius-md: 16px;
   --radius-sm: 12px;
-  --settings-popup-height: 640px;
+  --settings-popup-height: 560px;
   --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -230,15 +230,15 @@ html:has(.panel) body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  margin-bottom: 16px;
-  padding: 4px;
+  margin-bottom: 12px;
+  padding: 3px;
   background: var(--surface);
   border-radius: 999px;
 }
 
 .settings-tab {
   min-width: 0;
-  min-height: 32px;
+  min-height: 30px;
   padding: 0 10px;
   overflow: hidden;
   font-family: inherit;
@@ -441,7 +441,7 @@ html:has(.panel) body {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0;
@@ -455,7 +455,7 @@ html:has(.panel) body {
 }
 
 .speed-section {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .speed-segmented {
@@ -496,7 +496,7 @@ html:has(.panel) body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .settings-panel:not(.uses-elevenlabs) .field-row {
@@ -522,8 +522,8 @@ html:has(.panel) body {
 .settings-field-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 14px;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .elevenlabs-field-grid {
@@ -557,7 +557,7 @@ html:has(.panel) body {
 
 .field-select select {
   width: 100%;
-  padding: 10px 28px 10px 12px;
+  padding: 8px 28px 8px 12px;
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -601,12 +601,12 @@ html:has(.panel) body {
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .settings-input {
   width: 100%;
-  padding: 11px 12px;
+  padding: 9px 12px;
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -624,7 +624,7 @@ html:has(.panel) body {
 
 .settings-static-value {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 12px;
   overflow: hidden;
   font-size: 13px;
   font-weight: 600;
@@ -637,7 +637,7 @@ html:has(.panel) body {
 }
 
 .settings-hint {
-  margin: 7px 0 0;
+  margin: 5px 0 0;
   font-size: 11px;
   line-height: 1.35;
   color: var(--text-muted);
@@ -725,8 +725,8 @@ html:has(.panel) body {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  min-height: 42px;
-  margin-top: 18px;
+  min-height: 38px;
+  margin-top: 10px;
   padding: 0 16px;
   font-family: inherit;
   font-size: 13px;
@@ -755,10 +755,10 @@ html:has(.panel) body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 14px;
-  padding-top: 13px;
-  font-size: 11px;
-  line-height: 1.35;
+  margin-top: 10px;
+  padding-top: 10px;
+  font-size: 10px;
+  line-height: 1.25;
   color: var(--text-subtle);
   border-top: 1px solid var(--border);
 }
