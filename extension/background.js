@@ -4,6 +4,7 @@ import {
   DEFAULT_OPENAI_OUTPUT_FORMAT,
   DEFAULT_OPENAI_STYLE,
   DEFAULT_OPENAI_VOICE,
+  DEFAULT_KOKORO_PLATFORM,
   DEFAULT_KOKORO_VOICE,
   DEFAULT_SARVAM_EXPRESSIVENESS,
   DEFAULT_SARVAM_LANGUAGE,
@@ -109,6 +110,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           "smallestAiApiKey",
           "smallestAiVoice",
           "kokoroVoice",
+          "kokoroPlatform",
           "languageCode",
           "playbackSpeed",
         ]);
@@ -121,6 +123,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (provider === "kokoro") {
           result = await synthesizeKokoroSpeech(message.text, {
             voice: stored.kokoroVoice || DEFAULT_KOKORO_VOICE,
+            platform: stored.kokoroPlatform || DEFAULT_KOKORO_PLATFORM,
             playbackSpeed: message.playbackSpeed ?? stored.playbackSpeed,
           });
           if (!result?.ok) {

@@ -220,9 +220,15 @@ export const DEFAULT_SARVAM_LANGUAGE = "en-IN";
 export const DEFAULT_SARVAM_EXPRESSIVENESS = "medium";
 export const DEFAULT_SMALLEST_AI_VOICE = "magnus";
 export const DEFAULT_KOKORO_VOICE = "af_bella";
+export const KOKORO_PLATFORMS = [
+  { id: "auto", label: "Auto" },
+  { id: "wasm", label: "WASM" },
+  { id: "webgpu", label: "WebGPU" },
+];
+export const DEFAULT_KOKORO_PLATFORM = "auto";
 export const SPEECH_PROVIDERS = [
   { id: "webSpeech", label: "Browser Speech (free)" },
-  { id: "kokoro", label: "Kokoro Local" },
+  { id: "kokoro", label: "Kokoro Local (free)" },
   { id: "elevenLabs", label: "ElevenLabs AI" },
   { id: "openAI", label: "OpenAI" },
   { id: "sarvam", label: "Sarvam AI" },
@@ -250,6 +256,7 @@ export const SETTINGS_KEYS = [
   "smallestAiApiKey",
   "smallestAiVoice",
   "kokoroVoice",
+  "kokoroPlatform",
   "languageCode",
   "playbackSpeed",
 ];
@@ -302,6 +309,10 @@ export function getSmallestAIVoice(voice) {
 
 export function getKokoroVoice(voice) {
   return KOKORO_VOICES.find((v) => v.id === voice) ?? KOKORO_VOICES[0];
+}
+
+export function isKokoroPlatform(platform) {
+  return KOKORO_PLATFORMS.some((option) => option.id === platform);
 }
 
 export function getLanguage(code) {

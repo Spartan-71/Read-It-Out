@@ -39,6 +39,24 @@ Kokoro Local bundles the ONNX model and runtime assets with the extension, so th
 
 ## 🚀 Install
 
+### GitHub Release
+
+Each published GitHub release automatically uploads two downloadable extension zips:
+
+- `read-it-out-wasm-v<version>.zip` — defaults Kokoro Auto mode to WASM
+- `read-it-out-webgpu-v<version>.zip` — defaults Kokoro Auto mode to WebGPU when available
+
+Kokoro settings include a Runtime selector: Auto, WASM, or WebGPU.
+Choosing WebGPU is strict and does not fall back to WASM.
+
+The ONNX model files are tracked with Git LFS. Before committing model changes,
+install Git LFS and run:
+
+```bash
+git lfs install
+git lfs status
+```
+
 ### Manual (Developer Mode)
 
 No build step required.

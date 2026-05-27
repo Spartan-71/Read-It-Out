@@ -5,7 +5,9 @@ import {
   DEFAULT_OPENAI_VOICE,
   DEFAULT_PLAYBACK_SPEED,
   DEFAULT_KOKORO_VOICE,
+  DEFAULT_KOKORO_PLATFORM,
   KOKORO_LANGUAGES,
+  KOKORO_PLATFORMS,
   DEFAULT_SARVAM_EXPRESSIVENESS,
   DEFAULT_SARVAM_LANGUAGE,
   DEFAULT_SARVAM_VOICE,
@@ -23,6 +25,7 @@ import {
   SMALLEST_AI_FALLBACK_VOICES,
   SETTINGS_KEYS,
   SPEECH_PROVIDERS,
+  isKokoroPlatform,
   isSpeechProviderId,
   languageOptionLabel,
 } from "./config.js";
@@ -55,6 +58,7 @@ const sarvamLanguageSelect = document.getElementById("sarvam-language");
 const smallestAIApiKeyInput = document.getElementById("smallest-ai-api-key");
 const smallestAIVoiceSelect = document.getElementById("smallest-ai-voice");
 const kokoroVoiceSelect = document.getElementById("kokoro-voice");
+const kokoroPlatformSelect = document.getElementById("kokoro-platform");
 const saveButton = document.getElementById("save-settings");
 const errorToast = document.getElementById("popup-error-toast");
 
@@ -314,6 +318,12 @@ function initControls() {
     (language) => language.label,
   );
   populateSmallestAIVoiceSelect(SMALLEST_AI_FALLBACK_VOICES, DEFAULT_SMALLEST_AI_VOICE);
+  populateSelect(
+    kokoroPlatformSelect,
+    KOKORO_PLATFORMS,
+    (platform) => platform.id,
+    (platform) => platform.label,
+  );
   populateKokoroVoiceSelect(DEFAULT_KOKORO_VOICE);
 
   populateLanguageSelect();
@@ -405,6 +415,9 @@ async function loadSettings() {
   savedLanguageCode = stored.languageCode ?? DEFAULT_LANGUAGE_CODE;
   populateLanguageSelect(savedLanguageCode);
   populateKokoroVoiceSelect(stored.kokoroVoice || DEFAULT_KOKORO_VOICE);
+  kokoroPlatformSelect.value = isKokoroPlatform(stored.kokoroPlatform)
+    ? stored.kokoroPlatform
+    : DEFAULT_KOKORO_PLATFORM;
   updateProviderVisibility();
 
   playbackSpeed = PLAYBACK_SPEEDS.includes(stored.playbackSpeed)
@@ -440,6 +453,9 @@ async function saveSettings() {
       smallestAiApiKey: smallestAIApiKeyInput.value.trim(),
       smallestAiVoice: smallestAIVoiceSelect.value || DEFAULT_SMALLEST_AI_VOICE,
       kokoroVoice: kokoroVoiceSelect.value || DEFAULT_KOKORO_VOICE,
+      kokoroPlatform: isKokoroPlatform(kokoroPlatformSelect.value)
+        ? kokoroPlatformSelect.value
+        : DEFAULT_KOKORO_PLATFORM,
       languageCode: languageSelect.value || DEFAULT_LANGUAGE_CODE,
       playbackSpeed,
     });
@@ -480,6 +496,7 @@ smallestAIApiKeyInput.addEventListener("blur", () => {
 });
 smallestAIVoiceSelect.addEventListener("change", markDirty);
 kokoroVoiceSelect.addEventListener("change", markDirty);
+kokoroPlatformSelect.addEventListener("change", markDirty);
 openAIModelSelect.addEventListener("change", () => {
   updateProviderVisibility();
   markDirty();

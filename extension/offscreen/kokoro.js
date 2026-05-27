@@ -2,6 +2,10 @@ import {
   DEFAULT_KOKORO_VOICE,
   KOKORO_VOICES,
 } from "../config.js";
+import {
+  DEFAULT_PACKAGED_KOKORO_PLATFORM,
+  ENABLE_WEBGPU,
+} from "../build-flavor.js";
 
 const MODEL_ID = "onnx-community/Kokoro-82M-v1.0-ONNX";
 const WASM_ROOT = chrome.runtime.getURL("vendor/onnxruntime-web/");
@@ -107,7 +111,7 @@ async function loadKokoroModule() {
 
 async function createTTS(device) {
   const { KokoroTTS } = await loadKokoroModule();
-  const dtype = "q8";
+  const dtype = device === "webgpu" ? "fp32" : "q8";
   try {
     return await KokoroTTS.from_pretrained(MODEL_ID, {
       dtype,
@@ -120,11 +124,26 @@ async function createTTS(device) {
   }
 }
 
-async function getTTS() {
-  const runtime = "wasm";
+function normalizePlatform(platform) {
+  return ["auto", "wasm", "webgpu"].includes(platform) ? platform : "auto";
+}
+
+function configuredRuntime(platform) {
+  const normalized = normalizePlatform(platform);
+  if (normalized === "auto") {
+    return DEFAULT_PACKAGED_KOKORO_PLATFORM === "webgpu" && ENABLE_WEBGPU && navigator.gpu
+      ? "webgpu"
+      : "wasm";
+  }
+  return normalized;
+}
+
+async function getTTS(platform) {
+  const runtime = configuredRuntime(platform);
   if (ttsByRuntime.has(runtime)) return ttsByRuntime.get(runtime);
 
-  const tts = await createTTS("wasm");
+  const tts = await createTTS(runtime);
+  console.info(`Kokoro loaded with ${runtime}`);
   ttsByRuntime.set(runtime, tts);
   return tts;
 }
@@ -194,13 +213,13 @@ async function blobToBase64(blob) {
   return btoa(binary);
 }
 
-async function synthesize({ text, voice, playbackSpeed }) {
+async function synthesize({ text, voice, platform, playbackSpeed }) {
   const chunks = splitText(text);
   if (chunks.length === 0) {
     throw new Error("Kokoro could not generate audio for this text. Try a shorter selection.");
   }
 
-  const tts = await getTTS();
+  const tts = await getTTS(platform);
   const audioChunks = [];
   for (const chunk of chunks) {
     const audio = await tts.generate(chunk, {
