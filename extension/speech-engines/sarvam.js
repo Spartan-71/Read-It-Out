@@ -10,7 +10,8 @@ const MODEL = "bulbul:v3";
 const MAX_CHARS = 2500;
 const PACE_MIN = 0.5;
 const PACE_MAX = 2.0;
-const DEFAULT_MIME_TYPE = "audio/wav";
+const OUTPUT_AUDIO_CODEC = "mp3";
+const DEFAULT_MIME_TYPE = "audio/mpeg";
 
 export function clampSarvamPace(speed) {
   const value = speed ?? 1;
@@ -60,7 +61,7 @@ function stringifyErrorDetail(detail) {
 }
 
 function mapSarvamError(status, detail) {
-  if (status === 403) return "Invalid Sarvam API key. Check your key in settings.";
+  if (status === 401 || status === 403) return "Invalid Sarvam API key. Check your key in settings.";
   if (status === 422) return "Text too long or invalid voice selected.";
   if (status === 429) return "Sarvam API quota exceeded. Please wait or upgrade your plan.";
   if (status >= 500) return "Sarvam service error. Please try again.";
@@ -86,11 +87,12 @@ async function requestSpeechChunk(apiKey, input, options) {
       Accept: "application/json",
     },
     body: JSON.stringify({
-      inputs: [input],
+      text: input,
       target_language_code: getSarvamLanguage(options.language).code,
       speaker: getSarvamVoice(options.voice).id,
       model: MODEL,
       pace: options.pace,
+      output_audio_codec: OUTPUT_AUDIO_CODEC,
     }),
   });
 

@@ -5,15 +5,15 @@ import {
   SMALLEST_AI_MODELS,
 } from "../config.js";
 
-const STREAM_API = "https://api.smallest.ai/waves/v1/tts/live";
+const TTS_API = "https://api.smallest.ai/waves/v1/tts";
 const VOICES_API = "https://api.smallest.ai/waves/v1/voices";
 const SAMPLE_RATE = 24000;
-const OUTPUT_FORMAT = "mp3";
+const OUTPUT_FORMAT = "pcm";
 const TARGET_CHARS = 140;
 const MAX_CHARS = 250;
 const SPEED_MIN = 0.5;
 const SPEED_MAX = 2.0;
-const DEFAULT_MIME_TYPE = "audio/mpeg";
+const DEFAULT_MIME_TYPE = "audio/wav";
 
 export function clampSmallestAISpeed(speed) {
   const value = speed ?? 1;
@@ -84,16 +84,6 @@ function mapSmallestAIError(status, detail) {
   return detail ? `Smallest AI request failed (${status}). ${detail}` : `Smallest AI request failed (${status}).`;
 }
 
-function base64ToBytes(base64) {
-  const clean = base64.includes(",") ? base64.split(",").pop() : base64;
-  const binary = atob(clean);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
 function parseVoiceList(payload) {
   const rawVoices = Array.isArray(payload)
     ? payload
@@ -136,91 +126,13 @@ export async function fetchVoices(apiKey, model = DEFAULT_SMALLEST_AI_MODEL) {
   }
 }
 
-function parseSSEFrames(buffer) {
-  const frames = [];
-  let nextBuffer = buffer;
-  let separatorIndex = nextBuffer.indexOf("\n\n");
-
-  while (separatorIndex !== -1) {
-    const frame = nextBuffer.slice(0, separatorIndex);
-    frames.push(frame);
-    nextBuffer = nextBuffer.slice(separatorIndex + 2);
-    separatorIndex = nextBuffer.indexOf("\n\n");
-  }
-
-  return { frames, buffer: nextBuffer };
-}
-
-async function collectSSEAudio(response) {
-  if (!response.body) {
-    throw new Error("Smallest AI service error. Please try again.");
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  const chunks = [];
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
-    const parsed = parseSSEFrames(buffer);
-    buffer = parsed.buffer;
-
-    for (const frame of parsed.frames) {
-      const dataLines = frame
-        .split(/\r?\n/)
-        .filter((line) => line.startsWith("data:"))
-        .map((line) => line.slice(5).trim());
-      for (const data of dataLines) {
-        if (!data || data === "[DONE]") continue;
-        let event;
-        try {
-          event = JSON.parse(data);
-        } catch {
-          continue;
-        }
-        if (event.done) continue;
-        if (event.audio) chunks.push(base64ToBytes(event.audio));
-      }
-    }
-  }
-
-  buffer += decoder.decode().replace(/\r\n/g, "\n");
-  if (buffer.trim()) {
-    const parsed = parseSSEFrames(`${buffer}\n\n`);
-    for (const frame of parsed.frames) {
-      const data = frame
-        .split(/\r?\n/)
-        .find((line) => line.startsWith("data:"))
-        ?.slice(5)
-        .trim();
-      if (!data || data === "[DONE]") continue;
-      let event;
-      try {
-        event = JSON.parse(data);
-      } catch {
-        continue;
-      }
-      if (event.audio) chunks.push(base64ToBytes(event.audio));
-    }
-  }
-
-  if (chunks.length === 0) {
-    throw new Error("Smallest AI service error. Please try again.");
-  }
-
-  return chunks;
-}
-
 async function requestSpeechChunk(apiKey, text, options) {
-  const response = await fetch(STREAM_API, {
+  const response = await fetch(TTS_API, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      Accept: "text/event-stream",
+      Accept: "application/octet-stream",
     },
     body: JSON.stringify({
       text,
@@ -243,7 +155,57 @@ async function requestSpeechChunk(apiKey, text, options) {
     throw new Error(mapSmallestAIError(response.status, detail));
   }
 
-  return collectSSEAudio(response);
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    let detail = "";
+    try {
+      detail = stringifyErrorDetail(await response.json());
+    } catch {
+      // Ignore unreadable JSON body.
+    }
+    throw new Error(detail || "Smallest AI service error. Please try again.");
+  }
+
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.length === 0) {
+    throw new Error("Smallest AI service error. Please try again.");
+  }
+  return bytes;
+}
+
+function writeString(view, offset, value) {
+  for (let i = 0; i < value.length; i += 1) {
+    view.setUint8(offset + i, value.charCodeAt(i));
+  }
+}
+
+function pcmToWav(pcmChunks, sampleRate = SAMPLE_RATE) {
+  const dataLength = pcmChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const buffer = new ArrayBuffer(44 + dataLength);
+  const view = new DataView(buffer);
+
+  writeString(view, 0, "RIFF");
+  view.setUint32(4, 36 + dataLength, true);
+  writeString(view, 8, "WAVE");
+  writeString(view, 12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(view, 36, "data");
+  view.setUint32(40, dataLength, true);
+
+  const bytes = new Uint8Array(buffer, 44);
+  let offset = 0;
+  for (const chunk of pcmChunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return new Blob([buffer], { type: DEFAULT_MIME_TYPE });
 }
 
 export async function streamTextToSpeech(apiKey, text, options = {}) {
@@ -261,7 +223,7 @@ export async function streamTextToSpeech(apiKey, text, options = {}) {
   const buffers = [];
 
   for (const chunk of chunks) {
-    buffers.push(...await requestSpeechChunk(apiKey, chunk, {
+    buffers.push(await requestSpeechChunk(apiKey, chunk, {
       model,
       voice: options.voice ?? DEFAULT_SMALLEST_AI_VOICE,
       speed,
@@ -269,7 +231,7 @@ export async function streamTextToSpeech(apiKey, text, options = {}) {
   }
 
   return {
-    blob: new Blob(buffers, { type: DEFAULT_MIME_TYPE }),
+    blob: pcmToWav(buffers),
     playbackRate: 1,
   };
 }

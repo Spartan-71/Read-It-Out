@@ -76,7 +76,8 @@ function splitText(text, maxLength = OPENAI_MAX_CHARS) {
 }
 
 async function readAudioResponse(response, fallbackFormat) {
-  const contentType = response.headers.get("content-type") || MIME_TYPES[fallbackFormat] || "audio/mpeg";
+  const fallbackMimeType = MIME_TYPES[fallbackFormat] || "audio/mpeg";
+  const contentType = response.headers.get("content-type") || fallbackMimeType;
   if (contentType && !contentType.includes("audio/") && !contentType.includes("application/octet-stream")) {
     let detail = "";
     try {
@@ -112,8 +113,11 @@ async function readAudioResponse(response, fallbackFormat) {
     offset += chunk.length;
   }
 
-  const buffer = audio.buffer;
-  return { buffer, mimeType: contentType || MIME_TYPES[fallbackFormat] || "audio/mpeg" };
+  const responseMimeType = contentType.split(";")[0];
+  const mimeType = responseMimeType && responseMimeType !== "application/octet-stream"
+    ? contentType
+    : fallbackMimeType;
+  return { buffer: audio.buffer, mimeType };
 }
 
 async function requestSpeechChunk(apiKey, input, options) {

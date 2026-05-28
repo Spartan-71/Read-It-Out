@@ -1,3 +1,5 @@
+import { KOKORO_ENABLED } from "./build-flavor.js";
+
 /** ISO 639-1 codes supported by ElevenLabs multilingual / flash models. */
 export const LANGUAGES = [
   { code: "", label: "Auto-detect", flag: "🌐" },
@@ -220,7 +222,7 @@ export const DEFAULT_LANGUAGE_CODE = "en";
 export const DEFAULT_ELEVENLABS_MODEL = "eleven_v3";
 export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini-tts";
 export const DEFAULT_OPENAI_VOICE = "alloy";
-export const DEFAULT_OPENAI_OUTPUT_FORMAT = "opus";
+export const DEFAULT_OPENAI_OUTPUT_FORMAT = "mp3";
 export const DEFAULT_SARVAM_VOICE = "shubh";
 export const DEFAULT_SARVAM_LANGUAGE = "en-IN";
 export const DEFAULT_SMALLEST_AI_MODEL = "lightning_v3.1";
@@ -234,7 +236,7 @@ export const KOKORO_PLATFORMS = [
 export const DEFAULT_KOKORO_PLATFORM = "auto";
 export const SPEECH_PROVIDERS = [
   { id: "webSpeech", label: "Browser Speech (free)" },
-  { id: "kokoro", label: "Kokoro Local (free)" },
+  { id: "kokoro", label: "Kokoro Local (free)", disabled: !KOKORO_ENABLED },
   { id: "elevenLabs", label: "ElevenLabs AI" },
   { id: "openAI", label: "OpenAI" },
   { id: "sarvam", label: "Sarvam AI" },
@@ -268,7 +270,7 @@ export const SETTINGS_KEYS = [
 ];
 
 export function isSpeechProviderId(providerId) {
-  return SPEECH_PROVIDERS.some((provider) => provider.id === providerId);
+  return SPEECH_PROVIDERS.some((provider) => provider.id === providerId && !provider.disabled);
 }
 
 export function clampApiSpeed(speed) {

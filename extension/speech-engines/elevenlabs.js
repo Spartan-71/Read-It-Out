@@ -5,12 +5,22 @@ import {
 } from "../config.js";
 
 const ELEVENLABS_API = "https://api.elevenlabs.io/v1";
+const MIME_TYPES = {
+  mp3: "audio/mpeg",
+  pcm: "audio/pcm",
+  ulaw: "audio/basic",
+};
 
 export const DEFAULT_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
 export const MODEL_ID = DEFAULT_ELEVENLABS_MODEL;
 export const DEFAULT_OUTPUT_FORMAT = "mp3_44100_128";
 
 export { clampApiSpeed, clientPlaybackRate };
+
+function mimeTypeForOutputFormat(outputFormat) {
+  const codec = String(outputFormat || "").split("_")[0];
+  return MIME_TYPES[codec] || "audio/mpeg";
+}
 
 function stringifyErrorDetail(detail) {
   if (!detail) return "";
@@ -111,7 +121,10 @@ export async function streamTextToSpeech(apiKey, text, options = {}) {
     offset += chunk.length;
   }
 
-  const mimeType = contentType.split(";")[0] || "audio/mpeg";
+  const responseMimeType = contentType.split(";")[0];
+  const mimeType = responseMimeType && responseMimeType !== "application/octet-stream"
+    ? responseMimeType
+    : mimeTypeForOutputFormat(outputFormat);
   const blob = new Blob([audio], { type: mimeType });
   return { blob, playbackRate: clientPlaybackRate(requestedSpeed, apiSpeed) };
 }

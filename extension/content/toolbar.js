@@ -58,6 +58,8 @@
   const TOOLBAR_SPEEDS = [1.0, 1.25, 1.5, 2.0];
   const API_SPEED_MIN = 0.7;
   const API_SPEED_MAX = 1.2;
+  const KOKORO_ENABLED = globalThis.ReadItOutBuildTarget?.kokoroEnabled !== false;
+  const WEB_SPEECH_VOICE_WAIT_MS = 800;
 
   function clampApiSpeed(speed) {
     const value = speed ?? 1;
@@ -94,9 +96,6 @@
   ];
 
   const SHELL_HTML = `
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="${chrome.runtime.getURL("panel.css")}" />
     ${globalThis.ReadItOutSelectionPlayer.html()}
     <button type="button" class="dock-dismiss-layer" aria-label="Close quick controls"></button>
@@ -191,7 +190,9 @@
   }
 
   function normalizeSpeechProvider(provider) {
-    return ["elevenLabs", "openAI", "sarvam", "smallestAI", "kokoro"].includes(provider)
+    const supportedProviders = ["elevenLabs", "openAI", "sarvam", "smallestAI"];
+    if (KOKORO_ENABLED) supportedProviders.push("kokoro");
+    return supportedProviders.includes(provider)
       ? provider
       : "webSpeech";
   }
@@ -363,12 +364,35 @@
     }
   }
 
+  function getErrorSpeechProvider(err) {
+    return err?.speechProvider || err?.provider || speechProvider;
+  }
+
+  function speechProviderName(provider = speechProvider) {
+    if (provider === "webSpeech") return "Browser Speech";
+    if (provider === "kokoro") return "Kokoro";
+    if (provider === "openAI") return "OpenAI";
+    if (provider === "sarvam") return "Sarvam";
+    if (provider === "smallestAI") return "Smallest AI";
+    return "ElevenLabs";
+  }
+
   function speechErrorMessage(err) {
     const message = String(err?.message || err || "Speech generation failed").trim();
+    const provider = getErrorSpeechProvider(err);
     if (/extension context invalidated|context invalidated|receiving end does not exist/i.test(message)) {
       return "Read It Out was reloaded. Refresh this page once, then try again.";
     }
-    if (speechProvider === "kokoro") {
+    if (provider === "webSpeech") {
+      if (/web speech|browser speech|speech synthesis|system speech voices|speech dispatcher|speech engine|not-allowed|synthesis-failed|interrupted/i.test(message)) {
+        return message;
+      }
+      return `Browser Speech failed: ${message}`;
+    }
+    if (/web speech|browser speech|speech synthesis|system speech voices|speech dispatcher|speech engine|not-allowed|synthesis-failed|interrupted/i.test(message)) {
+      return message;
+    }
+    if (provider === "kokoro") {
       if (/model could not be loaded/i.test(message)) {
         return message.length > 180 ? `${message.slice(0, 177)}...` : message;
       }
@@ -377,7 +401,7 @@
       }
       return `Kokoro error: ${message}`;
     }
-    if (/openai/i.test(message)) {
+    if (provider === "openAI" || /openai/i.test(message)) {
       if (/api key|401|unauthorized/i.test(message)) {
         return "OpenAI API key missing or invalid. Open settings and check your API key.";
       }
@@ -395,7 +419,7 @@
     if (/^Text too long or invalid voice selected\.$/.test(message)) {
       return message;
     }
-    if (/sarvam/i.test(message)) {
+    if (provider === "sarvam" || /sarvam/i.test(message)) {
       if (/invalid sarvam api key|api key|403/i.test(message)) {
         return "Invalid Sarvam API key. Check your key in settings.";
       }
@@ -408,9 +432,12 @@
       if (/service error|500|502|503|504/i.test(message)) {
         return "Sarvam service error. Please try again.";
       }
+      if (/failed to load.*supported source|no supported source|not playable audio|empty audio|empty audio stream|decode/i.test(message)) {
+        return "Sarvam did not return playable audio. Try again or switch to another speech engine.";
+      }
       return `Sarvam error: ${message}`;
     }
-    if (/smallest ai/i.test(message)) {
+    if (provider === "smallestAI" || /smallest ai/i.test(message)) {
       if (/invalid or missing|api key|401/i.test(message)) {
         return "Invalid or missing Smallest AI API key. Check your key in settings.";
       }
@@ -425,7 +452,7 @@
       }
       return `Smallest AI error: ${message}`;
     }
-    if (/kokoro/i.test(message)) {
+    if (provider === "kokoro" || /kokoro/i.test(message)) {
       if (/model could not be loaded/i.test(message)) {
         return message.length > 180 ? `${message.slice(0, 177)}...` : message;
       }
@@ -443,28 +470,28 @@
     if (/no supported source|not playable audio|empty audio|empty audio stream/i.test(message)) {
       return "ElevenLabs did not return playable audio. Try a shorter selection or check the voice/model settings.";
     }
-    if (/web speech|speech synthesis|not-allowed|synthesis-failed|interrupted/i.test(message)) {
-      return `Browser Speech error: ${message}`;
-    }
     return `ElevenLabs error: ${message}`;
   }
 
-  function providerKeyErrorMessage(rawMessage = "") {
+  function providerKeyErrorMessage(rawMessage = "", provider = speechProvider) {
     const message = String(rawMessage || "");
-    if (speechProvider === "openAI") {
+    if (provider === "openAI") {
       return "OpenAI API key missing or invalid. Open settings and check your API key.";
     }
-    if (speechProvider === "sarvam") {
+    if (provider === "sarvam") {
       return "Invalid Sarvam API key. Check your key in settings.";
     }
-    if (speechProvider === "smallestAI") {
+    if (provider === "smallestAI") {
       if (/expired|unauthorized|403/i.test(message)) {
         return "Smallest AI API key expired or unauthorized.";
       }
       return "Invalid or missing Smallest AI API key. Check your key in settings.";
     }
-    if (speechProvider === "kokoro") {
+    if (provider === "kokoro") {
       return "Kokoro could not generate audio for this text. Try a shorter selection.";
+    }
+    if (provider === "webSpeech") {
+      return "Browser Speech failed. Check browser audio permissions and system speech voices.";
     }
     if (/401|403|unauthorized|forbidden/i.test(message)) {
       return "ElevenLabs rejected the request. Check your API key and account access.";
@@ -472,15 +499,21 @@
     return "ElevenLabs API key missing or invalid. Open settings and check your API key.";
   }
 
-  function providerLimitErrorMessage(message) {
-    if (speechProvider === "openAI") {
+  function providerLimitErrorMessage(message, provider = speechProvider) {
+    if (provider === "openAI") {
       return `OpenAI quota or rate limit error: ${message}`;
     }
-    if (speechProvider === "sarvam") {
+    if (provider === "sarvam") {
       return "Sarvam API quota exceeded. Please wait or upgrade your plan.";
     }
-    if (speechProvider === "smallestAI") {
+    if (provider === "smallestAI") {
       return "Smallest AI rate limit hit. Please wait and try again.";
+    }
+    if (provider === "kokoro") {
+      return "Kokoro could not generate audio for this text. Try a shorter selection.";
+    }
+    if (provider === "webSpeech") {
+      return "Browser Speech failed. Try a different voice or language in settings.";
     }
     return `ElevenLabs limit error: ${message}`;
   }
@@ -498,10 +531,11 @@
   function showErrorToast(err) {
     if (!ui?.errorToast) return;
     const rawMessage = String(err?.message || err || "Speech generation failed").trim();
+    const provider = getErrorSpeechProvider(err);
     const message = isApiKeyError(err)
-      ? providerKeyErrorMessage(rawMessage)
+      ? providerKeyErrorMessage(rawMessage, provider)
       : isLimitError(err)
-        ? providerLimitErrorMessage(rawMessage || "Speech limit reached")
+        ? providerLimitErrorMessage(rawMessage || "Speech limit reached", provider)
         : speechErrorMessage(err);
     ui.errorToast.textContent = message.length > 180 ? `${message.slice(0, 177)}...` : message;
     ui.errorToast.hidden = false;
@@ -929,6 +963,9 @@
     selectionPopupEnabled = stored.selectionPopupEnabled !== false;
     floatingDockEnabled = stored.floatingDockEnabled !== false;
     speechProvider = normalizeSpeechProvider(stored.speechProvider);
+    if (stored.speechProvider === "kokoro" && !KOKORO_ENABLED) {
+      saveLocal({ speechProvider });
+    }
     if (PLAYBACK_SPEEDS.includes(stored.playbackSpeed)) {
       selectionPlayer.speed = stored.playbackSpeed;
       pagePlayer.speed = stored.playbackSpeed;
@@ -1021,7 +1058,9 @@
             return;
           }
           if (!response?.ok) {
-            reject(new Error(response?.error || "Speech generation failed"));
+            const error = new Error(response?.error || "Speech generation failed");
+            error.speechProvider = response?.provider;
+            reject(error);
             return;
           }
           resolve(response);
@@ -1169,7 +1208,7 @@
     }
   }
 
-  async function createKokoroAudioFromResult(result) {
+  async function createDecodedAudioFromResult(result, providerName) {
     const bytes = base64ToBytes(result.audio, result.byteLength);
     const context = new AudioContext();
     let buffer;
@@ -1180,8 +1219,11 @@
       if (result.byteLength) parts.push(`${result.byteLength} bytes`);
       if (result.debug?.samples) parts.push(`${result.debug.samples} samples`);
       if (result.debug?.header) parts.push(result.debug.header);
+      if (!result.debug?.header && bytes.length) {
+        parts.push(Array.from(bytes.slice(0, 12), (byte) => byte.toString(16).padStart(2, "0")).join(" "));
+      }
       const suffix = parts.length ? ` (${parts.join(", ")})` : "";
-      throw new Error(`Kokoro WAV could not be decoded: ${err?.message || err}${suffix}`);
+      throw new Error(`${providerName} audio could not be decoded: ${err?.message || err}${suffix}`);
     } finally {
       context.close().catch(() => {});
     }
@@ -1193,41 +1235,53 @@
     return { audio: new WebAudioPlayback(buffer, parts.join(", ")), objectUrl: null };
   }
 
-  async function createAudioFromResult(result) {
-    if (speechProvider === "kokoro") {
-      return createKokoroAudioFromResult(result);
-    }
+  async function createKokoroAudioFromResult(result) {
+    return createDecodedAudioFromResult(result, "Kokoro");
+  }
 
-    const mimeType = result.mimeType || "audio/mpeg";
-    const probe = document.createElement("audio");
-    if (mimeType && probe.canPlayType(mimeType) === "") {
-      const provider =
-        speechProvider === "openAI"
-          ? "OpenAI"
-          : speechProvider === "sarvam"
-            ? "Sarvam"
-            : speechProvider === "smallestAI"
-              ? "Smallest AI"
-              : speechProvider === "kokoro"
-                ? "Kokoro"
-                : "ElevenLabs";
-      throw new Error(`Browser cannot play ${provider} audio type ${mimeType}`);
+  async function createAudioFromResult(result) {
+    const resultProvider = result?.provider || speechProvider;
+    try {
+      if (resultProvider === "kokoro") {
+        return await createKokoroAudioFromResult(result);
+      }
+      if (resultProvider === "sarvam") {
+        return await createDecodedAudioFromResult(result, "Sarvam");
+      }
+      if (resultProvider === "smallestAI") {
+        return await createDecodedAudioFromResult(result, "Smallest AI");
+      }
+      if (resultProvider === "elevenLabs") {
+        return await createDecodedAudioFromResult(result, "ElevenLabs");
+      }
+      if (resultProvider === "openAI") {
+        return await createDecodedAudioFromResult(result, "OpenAI");
+      }
+
+      const mimeType = result.mimeType || "audio/mpeg";
+      const probe = document.createElement("audio");
+      if (mimeType && probe.canPlayType(mimeType) === "") {
+        throw new Error(`Browser cannot play ${speechProviderName(resultProvider)} audio type ${mimeType}`);
+      }
+      const blob = base64ToAudioBlob(result.audio, mimeType, result.byteLength);
+      const objectUrl = URL.createObjectURL(blob);
+      const audio = new Audio(objectUrl);
+      audio.dataset.speechProvider = resultProvider;
+      if (result.debug) {
+        const parts = [];
+        if (result.byteLength) parts.push(`${result.byteLength} bytes`);
+        if (result.debug.samples) parts.push(`${result.debug.samples} samples`);
+        if (result.debug.header) parts.push(result.debug.header);
+        audio.dataset.speechDebug = parts.join(", ");
+      }
+      return {
+        audio,
+        objectUrl,
+      };
+    } catch (err) {
+      if (err && typeof err === "object") err.speechProvider ||= resultProvider;
+      throw err;
     }
-    const blob = base64ToAudioBlob(result.audio, mimeType, result.byteLength);
-    const objectUrl = URL.createObjectURL(blob);
-    const audio = new Audio(objectUrl);
-    audio.dataset.speechProvider = speechProvider;
-    if (result.debug) {
-      const parts = [];
-      if (result.byteLength) parts.push(`${result.byteLength} bytes`);
-      if (result.debug.samples) parts.push(`${result.debug.samples} samples`);
-      if (result.debug.header) parts.push(result.debug.header);
-      audio.dataset.speechDebug = parts.join(", ");
-    }
-    return {
-      audio,
-      objectUrl,
-    };
   }
 
   async function synthesizePlayableSpeech(text, playbackSpeed) {
@@ -1246,6 +1300,7 @@
     try {
       return { result, audioResult: await createAudioFromResult(result) };
     } catch (err) {
+      if (err && typeof err === "object") err.speechProvider ||= result?.provider || speechProvider;
       if (speechProvider === "kokoro") throw err;
       const message = String(err?.message || err);
       const canRetryOpenAIMp3 =
@@ -1267,7 +1322,9 @@
   function mediaErrorMessage(element) {
     const code = element?.error?.code;
     const debug = element?.dataset?.speechDebug ? ` (${element.dataset.speechDebug})` : "";
-    if (speechProvider === "kokoro" || element?.dataset?.speechProvider === "kokoro") {
+    const provider = element?.dataset?.speechProvider || speechProvider;
+    const providerName = speechProviderName(provider);
+    if (provider === "kokoro") {
       if (code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
         return `Kokoro generated audio could not be played: no supported source${debug}`;
       }
@@ -1277,28 +1334,75 @@
       return `Kokoro audio playback failed${debug}`;
     }
     if (code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-      return "Generated audio could not be played by this browser. Try again with a shorter selection.";
+      return `${providerName} audio could not be played by this browser. Try again with a shorter selection.`;
     }
     if (code === MediaError.MEDIA_ERR_DECODE) {
-      return "Generated audio could not be decoded. Try again.";
+      return `${providerName} audio could not be decoded. Try again.`;
     }
     if (code === MediaError.MEDIA_ERR_NETWORK) {
-      return "Audio loading was interrupted. Check your connection and try again.";
+      return `${providerName} audio loading was interrupted. Check your connection and try again.`;
     }
-    return "Audio playback failed.";
+    return `${providerName} audio playback failed.`;
   }
 
   function hasWebSpeech() {
     return "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
   }
 
-  function getWebSpeechVoice() {
-    const voices = speechSynthesis.getVoices();
+  function isFirefoxBrowser() {
+    return /firefox/i.test(navigator.userAgent);
+  }
+
+  function webSpeechSupportMessage() {
+    if (isFirefoxBrowser() && /linux/i.test(navigator.platform || navigator.userAgent)) {
+      return "Firefox could not find any system speech voices. On Linux, install and configure Speech Dispatcher or choose an API speech engine in settings.";
+    }
+    return "This browser did not expose any Web Speech voices. Choose an API speech engine in settings.";
+  }
+
+  function webSpeechErrorMessage(event) {
+    const error = String(event?.error || "").trim();
+    if (/language-unavailable|voice-unavailable/i.test(error)) {
+      return "The selected browser speech language is unavailable. Choose a different language in settings.";
+    }
+    if (/not-allowed|audio-busy|audio-hardware/i.test(error)) {
+      return `Browser Speech failed: ${error}. Check Firefox site audio permissions and system audio output.`;
+    }
+    return error ? `Browser Speech failed: ${error}` : webSpeechSupportMessage();
+  }
+
+  function getWebSpeechVoices() {
+    try {
+      return speechSynthesis.getVoices();
+    } catch (_err) {
+      return [];
+    }
+  }
+
+  function waitForWebSpeechVoices(timeoutMs = WEB_SPEECH_VOICE_WAIT_MS) {
+    if (!hasWebSpeech()) return Promise.resolve([]);
+    const voices = getWebSpeechVoices();
+    if (voices.length > 0) return Promise.resolve(voices);
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        speechSynthesis.removeEventListener?.("voiceschanged", finish);
+        resolve(getWebSpeechVoices());
+      };
+      speechSynthesis.addEventListener?.("voiceschanged", finish, { once: true });
+      setTimeout(finish, timeoutMs);
+    });
+  }
+
+  function getWebSpeechVoice(voices) {
     if (!voices.length) return null;
-    const lang = languageCode || document.documentElement.lang || navigator.language || "en";
+    const lang = (languageCode || document.documentElement.lang || navigator.language || "en").toLowerCase();
     const languageFamily = lang.toLowerCase().split("-")[0];
     return (
-      voices.find((voice) => voice.lang === lang) ||
+      voices.find((voice) => voice.lang?.toLowerCase() === lang) ||
       voices.find((voice) => voice.lang?.toLowerCase().startsWith(`${languageFamily}-`)) ||
       voices.find((voice) => voice.lang?.toLowerCase() === languageFamily) ||
       voices.find((voice) => voice.default) ||
@@ -1306,16 +1410,24 @@
     );
   }
 
-  function createWebSpeechUtterance(text, player) {
+  async function createWebSpeechUtterance(text, player) {
     if (!hasWebSpeech()) {
       throw new Error("Web Speech API is not available on this page");
     }
+    const voices = await waitForWebSpeechVoices();
+    if (voices.length === 0) {
+      throw new Error(webSpeechSupportMessage());
+    }
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = languageCode || document.documentElement.lang || navigator.language || "en";
     utterance.rate = Math.min(2, Math.max(0.5, player.speed || 1));
     utterance.pitch = 1;
-    const voice = getWebSpeechVoice();
-    if (voice) utterance.voice = voice;
+    const voice = getWebSpeechVoice(voices);
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
+    } else {
+      utterance.lang = languageCode || document.documentElement.lang || navigator.language || "en";
+    }
     return utterance;
   }
 
@@ -1347,12 +1459,12 @@
     if (updateFn) startSpeechTimer(player, updateFn);
   }
 
-  function startSelectionWebSpeech(text) {
+  async function startSelectionWebSpeech(text) {
     releasePageAudio();
     releaseSelectionAudio();
 
     try {
-      const utterance = createWebSpeechUtterance(text, selectionPlayer);
+      const utterance = await createWebSpeechUtterance(text, selectionPlayer);
       selectionPlayer.utterance = utterance;
       selectionPlayer.startedAt = 0;
       selectionPlayer.elapsedBeforePause = 0;
@@ -1383,7 +1495,7 @@
       };
       utterance.onerror = (event) => {
         if (selectionPlayer.utterance !== utterance) return;
-        showErrorToast(event.error || "Web Speech synthesis failed");
+        showErrorToast(webSpeechErrorMessage(event));
         releaseSelectionAudio();
       };
 
@@ -1396,7 +1508,7 @@
     }
   }
 
-  function startPageWebSpeechItem() {
+  async function startPageWebSpeechItem() {
     if (!pagePlayer.active) return;
 
     releaseCurrentPageAudio();
@@ -1411,7 +1523,7 @@
     highlightPageItem(item);
 
     try {
-      const utterance = createWebSpeechUtterance(item.text, pagePlayer);
+      const utterance = await createWebSpeechUtterance(item.text, pagePlayer);
       pagePlayer.utterance = utterance;
       pagePlayer.startedAt = 0;
       pagePlayer.elapsedBeforePause = 0;
@@ -1444,7 +1556,7 @@
       };
       utterance.onerror = (event) => {
         if (pagePlayer.utterance !== utterance) return;
-        showErrorToast(event.error || "Web Speech synthesis failed");
+        showErrorToast(webSpeechErrorMessage(event));
         releasePageAudio();
       };
 
@@ -1460,7 +1572,7 @@
     await loadSettings();
 
     if (speechProvider === "webSpeech") {
-      startPageWebSpeechItem();
+      await startPageWebSpeechItem();
       return;
     }
 
@@ -1511,7 +1623,7 @@
     if (!text) return;
 
     if (speechProvider === "webSpeech") {
-      startSelectionWebSpeech(text);
+      await startSelectionWebSpeech(text);
       return;
     }
 
@@ -1577,7 +1689,7 @@
     }
     pagePlayer.active = true;
     if (speechProvider === "webSpeech") {
-      startPageWebSpeechItem();
+      await startPageWebSpeechItem();
       return;
     }
     await playNextPageItem();
