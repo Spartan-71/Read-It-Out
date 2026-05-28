@@ -54,9 +54,9 @@ package_variant() {
   (
     cd "${package_dir}"
     if command -v zip >/dev/null 2>&1; then
-      zip -qr "${zip_path}" .
+      zip -qr "${zip_path}" *
     elif command -v bsdtar >/dev/null 2>&1; then
-      bsdtar -a -cf "${zip_path}" .
+      bsdtar -a -cf "${zip_path}" *
     else
       echo "zip or bsdtar is required to create release packages." >&2
       exit 1
