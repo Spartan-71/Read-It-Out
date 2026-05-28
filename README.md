@@ -44,8 +44,8 @@ Kokoro Local bundles the ONNX model and runtime assets with the extension, so th
 
 Each published GitHub release automatically uploads downloadable extension zips:
 
-- [read-it-out-wasm-v1.0.0.zip](https://github.com/Spartan-71/read-it-out/releases/download/v1.0.0/read-it-out-wasm-v1.0.0.zip) — defaults Kokoro Auto mode to WASM
-- [read-it-out-webgpu-v1.0.0.zip](https://github.com/Spartan-71/read-it-out/releases/download/v1.0.0/read-it-out-webgpu-v1.0.0.zip) — defaults Kokoro Auto mode to WebGPU when available
+- [read-it-out-chrome-wasm-v1.0.0.zip](https://github.com/Spartan-71/read-it-out/releases/download/v1.0.0/read-it-out-chrome-wasm-v1.0.0.zip) — Chrome build, defaults Kokoro Auto mode to WASM
+- [read-it-out-chrome-webgpu-v1.0.0.zip](https://github.com/Spartan-71/read-it-out/releases/download/v1.0.0/read-it-out-chrome-webgpu-v1.0.0.zip) — Chrome build, defaults Kokoro Auto mode to WebGPU when available
 - `read-it-out-firefox-v1.0.0.zip` — Firefox MV3 build without bundled Kokoro model/runtime support
 
 To install from a release zip, you do not need to clone the repo:
@@ -76,7 +76,7 @@ git clone https://github.com/Spartan-71/read-it-out.git
 2. Enable **Developer mode** (top right toggle)
 3. Click **Load unpacked**
 4. Run `bash scripts/package-release.sh`
-5. Extract `dist/read-it-out-wasm-v1.0.0.zip`
+5. Extract `dist/read-it-out-chrome-wasm-v1.0.0.zip`
 6. Select the extracted folder
 
 For Firefox development, run `bash scripts/package-release.sh`, extract `dist/read-it-out-firefox-v1.0.0.zip`, then load the extracted `manifest.json` from `about:debugging#/runtime/this-firefox`.

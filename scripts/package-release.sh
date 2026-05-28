@@ -67,6 +67,6 @@ package_variant() {
   echo "Created ${zip_path}"
 }
 
-package_variant "wasm" "false" "wasm"
-package_variant "webgpu" "true" "webgpu"
+package_variant "chrome-wasm" "false" "wasm"
+package_variant "chrome-webgpu" "true" "webgpu"
 package_variant "firefox" "false" "wasm" "firefox" "false"
