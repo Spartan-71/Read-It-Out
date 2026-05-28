@@ -30,6 +30,7 @@ import {
   isSpeechProviderId,
   languageOptionLabel,
 } from "./config.js";
+import { storageGet, storageSet } from "./browser-api.js";
 import { fetchVoices as fetchSmallestAIVoices } from "./speech-engines/smallest-ai.js";
 
 const form = document.getElementById("settings-form");
@@ -218,6 +219,7 @@ function populateSelect(select, options, getValue, getLabel) {
     const el = document.createElement("option");
     el.value = getValue(option);
     el.textContent = getLabel(option);
+    el.disabled = Boolean(option.disabled);
     select.appendChild(el);
   }
 }
@@ -380,7 +382,7 @@ function initControls() {
 }
 
 async function loadSettings() {
-  const stored = await chrome.storage.local.get(SETTINGS_KEYS);
+  const stored = await storageGet(SETTINGS_KEYS);
   speechProvider = isSpeechProviderId(stored.speechProvider)
     ? stored.speechProvider
     : DEFAULT_SPEECH_PROVIDER;
@@ -439,7 +441,7 @@ async function saveSettings() {
   setStatus("Saving");
 
   try {
-    await chrome.storage.local.set({
+    await storageSet({
       speechProvider,
       selectionPopupEnabled: selectionPopupEnabledInput.checked,
       floatingDockEnabled: floatingDockEnabledInput.checked,
@@ -545,6 +547,10 @@ if ("speechSynthesis" in window) {
     if (speechProvider !== "webSpeech") return;
     populateLanguageSelect(languageSelect.value || savedLanguageCode);
   });
+  setTimeout(() => {
+    if (speechProvider !== "webSpeech") return;
+    populateLanguageSelect(languageSelect.value || savedLanguageCode);
+  }, 800);
 }
 
 window.addEventListener("load", schedulePopupResize);

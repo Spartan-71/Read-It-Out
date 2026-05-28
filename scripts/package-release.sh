@@ -11,16 +11,20 @@ package_variant() {
   local label="$1"
   local webgpu="$2"
   local default_platform="$3"
+  local browser_target="${4:-chrome}"
+  local kokoro_enabled="${5:-true}"
   local staging_dir
   local package_dir
   local zip_path
 
-  for model in model_quantized.onnx model.onnx; do
-    if [[ ! -f "${ROOT_DIR}/extension/models/kokoro/onnx/${model}" ]]; then
-      echo "Missing required model: extension/models/kokoro/onnx/${model}" >&2
-      exit 1
-    fi
-  done
+  if [[ "${kokoro_enabled}" == "true" ]]; then
+    for model in model_quantized.onnx model.onnx; do
+      if [[ ! -f "${ROOT_DIR}/extension/models/kokoro/onnx/${model}" ]]; then
+        echo "Missing required model: extension/models/kokoro/onnx/${model}" >&2
+        exit 1
+      fi
+    done
+  fi
 
   staging_dir="$(mktemp -d)"
   package_dir="${staging_dir}/read-it-out"
@@ -28,7 +32,19 @@ package_variant() {
 
   mkdir -p "${package_dir}"
   cp -R "${ROOT_DIR}/extension/." "${package_dir}/"
-  printf "export const ENABLE_WEBGPU = %s;\nexport const DEFAULT_PACKAGED_KOKORO_PLATFORM = \"%s\";\n" "${webgpu}" "${default_platform}" > "${package_dir}/build-flavor.js"
+  printf "export const ENABLE_WEBGPU = %s;\nexport const DEFAULT_PACKAGED_KOKORO_PLATFORM = \"%s\";\nexport const BROWSER_TARGET = \"%s\";\nexport const KOKORO_ENABLED = %s;\n" "${webgpu}" "${default_platform}" "${browser_target}" "${kokoro_enabled}" > "${package_dir}/build-flavor.js"
+  printf "(function () {\n  globalThis.ReadItOutBuildTarget = {\n    browserTarget: \"%s\",\n    kokoroEnabled: %s,\n  };\n})();\n" "${browser_target}" "${kokoro_enabled}" > "${package_dir}/content/build-target.js"
+
+  if [[ "${browser_target}" == "firefox" ]]; then
+    cp "${ROOT_DIR}/extension/manifest.firefox.json" "${package_dir}/manifest.json"
+    rm -rf "${package_dir}/models/kokoro" \
+      "${package_dir}/vendor/kokoro-js" \
+      "${package_dir}/vendor/onnxruntime-web" \
+      "${package_dir}/offscreen"
+    rmdir "${package_dir}/models" 2>/dev/null || true
+  fi
+
+  rm -f "${package_dir}/manifest.firefox.json"
 
   if [[ -f "${zip_path}" ]]; then
     unlink "${zip_path}"
@@ -52,3 +68,4 @@ package_variant() {
 
 package_variant "wasm" "false" "wasm"
 package_variant "webgpu" "true" "webgpu"
+package_variant "firefox" "false" "wasm" "firefox" "false"

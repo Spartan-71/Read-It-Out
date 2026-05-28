@@ -10,6 +10,8 @@ import {
   DEFAULT_SMALLEST_AI_MODEL,
   DEFAULT_SMALLEST_AI_VOICE,
 } from "./config.js";
+import { KOKORO_ENABLED } from "./build-flavor.js";
+import { extensionApi, runtimeSendMessage, storageGet, storageSet } from "./browser-api.js";
 import { streamTextToSpeech as streamOpenAITextToSpeech } from "./speech-engines/openai.js";
 import { streamTextToSpeech as streamSarvamTextToSpeech } from "./speech-engines/sarvam.js";
 import { streamTextToSpeech as streamSmallestAITextToSpeech } from "./speech-engines/smallest-ai.js";
@@ -18,22 +20,23 @@ const MENU_ID = "read-it-out";
 const KOKORO_OFFSCREEN_URL = "offscreen/kokoro.html";
 let creatingKokoroOffscreen;
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({
+extensionApi.runtime.onInstalled.addListener(() => {
+  (async () => {
+    await extensionApi.contextMenus.removeAll();
+    await extensionApi.contextMenus.create({
       id: MENU_ID,
       title: "Read It Out",
       contexts: ["selection"],
     });
-  });
+  })().catch((err) => console.error("Read It Out context menu setup failed", err));
 });
 
-chrome.contextMenus.onClicked.addListener((info) => {
+extensionApi.contextMenus.onClicked.addListener((info) => {
   if (info.menuItemId !== MENU_ID || !info.selectionText) {
     return;
   }
 
-  chrome.storage.local.set({ selectedText: info.selectionText });
+  storageSet({ selectedText: info.selectionText }).catch(() => {});
 });
 
 async function blobToBase64(blob) {
@@ -47,23 +50,23 @@ async function blobToBase64(blob) {
 }
 
 async function ensureKokoroOffscreenDocument() {
-  if (!chrome.offscreen?.createDocument) {
+  if (!KOKORO_ENABLED || !extensionApi.offscreen?.createDocument) {
     throw new Error("Kokoro local speech requires Chrome offscreen document support.");
   }
 
-  const offscreenUrl = chrome.runtime.getURL(KOKORO_OFFSCREEN_URL);
-  if (chrome.runtime.getContexts) {
-    const contexts = await chrome.runtime.getContexts({
+  const offscreenUrl = extensionApi.runtime.getURL(KOKORO_OFFSCREEN_URL);
+  if (extensionApi.runtime.getContexts) {
+    const contexts = await extensionApi.runtime.getContexts({
       contextTypes: ["OFFSCREEN_DOCUMENT"],
       documentUrls: [offscreenUrl],
     });
     if (contexts.length > 0) return;
-  } else if (chrome.offscreen.hasDocument && await chrome.offscreen.hasDocument()) {
+  } else if (extensionApi.offscreen.hasDocument && await extensionApi.offscreen.hasDocument()) {
     return;
   }
 
   if (!creatingKokoroOffscreen) {
-    creatingKokoroOffscreen = chrome.offscreen.createDocument({
+    creatingKokoroOffscreen = extensionApi.offscreen.createDocument({
       url: KOKORO_OFFSCREEN_URL,
       reasons: ["BLOBS"],
       justification: "Generate local Kokoro speech audio with bundled ONNX Runtime assets.",
@@ -76,24 +79,25 @@ async function ensureKokoroOffscreenDocument() {
 
 async function synthesizeKokoroSpeech(text, options) {
   await ensureKokoroOffscreenDocument();
-  return chrome.runtime.sendMessage({
+  return runtimeSendMessage({
     action: "synthesizeKokoro",
     text,
     ...options,
   });
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === "openPopup") {
-    chrome.action.openPopup().catch(() => {});
+    extensionApi.action?.openPopup?.().catch(() => {});
     sendResponse({ ok: true });
     return false;
   }
 
   if (message.action === "synthesize") {
     (async () => {
+      let provider = "elevenLabs";
       try {
-        const stored = await chrome.storage.local.get([
+        const stored = await storageGet([
           "speechProvider",
           "elevenLabsApiKey",
           "elevenLabsVoiceId",
@@ -113,7 +117,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           "playbackSpeed",
         ]);
 
-        const provider = ["openAI", "sarvam", "smallestAI", "kokoro"].includes(stored.speechProvider)
+        if (stored.speechProvider === "kokoro" && !KOKORO_ENABLED) {
+          await storageSet({ speechProvider: "webSpeech" }).catch(() => {});
+          sendResponse({ ok: false, error: "Kokoro Local is not supported in the Firefox extension yet.", provider: "kokoro" });
+          return;
+        }
+
+        provider = ["openAI", "sarvam", "smallestAI", ...(KOKORO_ENABLED ? ["kokoro"] : [])].includes(stored.speechProvider)
           ? stored.speechProvider
           : "elevenLabs";
         let result;
@@ -125,15 +135,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             playbackSpeed: message.playbackSpeed ?? stored.playbackSpeed,
           });
           if (!result?.ok) {
-            sendResponse({ ok: false, error: result?.error || "Kokoro could not generate audio for this text. Try a shorter selection." });
+            sendResponse({
+              ok: false,
+              error: result?.error || "Kokoro could not generate audio for this text. Try a shorter selection.",
+              provider,
+            });
             return;
           }
-          sendResponse(result);
+          sendResponse({ ...result, provider });
           return;
         } else if (provider === "openAI") {
           const apiKey = stored.openaiApiKey;
           if (!apiKey) {
-            sendResponse({ ok: false, error: "OpenAI API key missing or invalid." });
+            sendResponse({ ok: false, error: "OpenAI API key missing or invalid.", provider });
             return;
           }
 
@@ -146,7 +160,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         } else if (provider === "sarvam") {
           const apiKey = stored.sarvamApiKey;
           if (!apiKey) {
-            sendResponse({ ok: false, error: "Invalid Sarvam API key. Check your key in settings." });
+            sendResponse({ ok: false, error: "Invalid Sarvam API key. Check your key in settings.", provider });
             return;
           }
 
@@ -158,7 +172,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         } else if (provider === "smallestAI") {
           const apiKey = stored.smallestAiApiKey;
           if (!apiKey) {
-            sendResponse({ ok: false, error: "Invalid or missing Smallest AI API key. Check your key in settings." });
+            sendResponse({ ok: false, error: "Invalid or missing Smallest AI API key. Check your key in settings.", provider });
             return;
           }
 
@@ -170,7 +184,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         } else {
           const apiKey = stored.elevenLabsApiKey;
           if (!apiKey) {
-            sendResponse({ ok: false, error: "Missing ElevenLabs API key" });
+            sendResponse({ ok: false, error: "Missing ElevenLabs API key", provider });
             return;
           }
 
@@ -191,9 +205,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           mimeType: blob.type || "audio/mpeg",
           byteLength: blob.size,
           playbackRate,
+          provider,
         });
       } catch (err) {
-        sendResponse({ ok: false, error: err.message || "Speech generation failed" });
+        sendResponse({ ok: false, error: err.message || "Speech generation failed", provider });
       }
     })();
     return true;
