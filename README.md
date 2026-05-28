@@ -75,7 +75,9 @@ git clone https://github.com/Spartan-71/read-it-out.git
 1. Open `chrome://extensions` in Chrome
 2. Enable **Developer mode** (top right toggle)
 3. Click **Load unpacked**
-4. Select the `extension/` folder
+4. Run `bash scripts/package-release.sh`
+5. Extract `dist/read-it-out-wasm-v1.0.0.zip`
+6. Select the extracted folder
 
 For Firefox development, run `bash scripts/package-release.sh`, extract `dist/read-it-out-firefox-v1.0.0.zip`, then load the extracted `manifest.json` from `about:debugging#/runtime/this-firefox`.
 
@@ -98,7 +100,7 @@ git lfs status
 
 ```text
 extension/
-├── manifest.json          Chrome development manifest (MV3)
+├── manifest.chrome.json   Chrome package manifest (MV3)
 ├── manifest.firefox.json  Firefox package manifest (MV3)
 ├── background.js          Service worker — context menu + 
 │                          cloud/local synthesis bridge

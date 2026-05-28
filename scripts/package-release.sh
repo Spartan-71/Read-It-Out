@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="${ROOT_DIR}/dist"
-VERSION="$(node -e "console.log(require('./extension/manifest.json').version)")"
+VERSION="$(node -e "console.log(require('./extension/manifest.chrome.json').version)")"
 
 mkdir -p "${OUT_DIR}"
 
@@ -32,6 +32,7 @@ package_variant() {
 
   mkdir -p "${package_dir}"
   cp -R "${ROOT_DIR}/extension/." "${package_dir}/"
+  cp "${ROOT_DIR}/extension/manifest.chrome.json" "${package_dir}/manifest.json"
   printf "export const ENABLE_WEBGPU = %s;\nexport const DEFAULT_PACKAGED_KOKORO_PLATFORM = \"%s\";\nexport const BROWSER_TARGET = \"%s\";\nexport const KOKORO_ENABLED = %s;\n" "${webgpu}" "${default_platform}" "${browser_target}" "${kokoro_enabled}" > "${package_dir}/build-flavor.js"
   printf "(function () {\n  globalThis.ReadItOutBuildTarget = {\n    browserTarget: \"%s\",\n    kokoroEnabled: %s,\n  };\n})();\n" "${browser_target}" "${kokoro_enabled}" > "${package_dir}/content/build-target.js"
 
@@ -44,7 +45,7 @@ package_variant() {
     rmdir "${package_dir}/models" 2>/dev/null || true
   fi
 
-  rm -f "${package_dir}/manifest.firefox.json"
+  rm -f "${package_dir}/manifest.chrome.json" "${package_dir}/manifest.firefox.json"
 
   if [[ -f "${zip_path}" ]]; then
     unlink "${zip_path}"
