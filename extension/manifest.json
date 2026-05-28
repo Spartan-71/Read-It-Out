@@ -3,6 +3,7 @@
   "name": "Read It Out",
   "version": "1.0.0",
   "description": "TTS for any webpage — runs fully local with Kokoro, or connect your preferred AI voice provider.",
+  "minimum_chrome_version": "109",
   "icons": {
     "16": "assets/icon-16.png",
     "32": "assets/icon-32.png",
@@ -45,22 +46,17 @@
       "js": [
         "content/selection-player.js",
         "content/floating-dock.js",
+        "content/build-target.js",
         "content/toolbar.js"
       ],
-      "run_at": "document_idle",
-      "all_frames": true
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
       "resources": [
         "panel.css",
-        "assets/logo.png",
-        "models/kokoro/*",
-        "models/kokoro/onnx/*",
-        "models/kokoro/voices/*",
-        "vendor/kokoro-js/*",
-        "vendor/onnxruntime-web/*"
+        "assets/logo.png"
       ],
       "matches": ["<all_urls>"]
     }
